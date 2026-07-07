@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('upload.title', 'Multimodal Video') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>{{ _('upload.title', 'Multimodal Video') }}</h2>
+    <p class="muted">{{ _('upload.helper', 'Upload a driving video for video-audio-skeleton behavior analysis.') }}</p>
+  </div>
+  <a class="button secondary" href="{{ url_for('dashboard') }}">{{ _('nav.dashboard', 'Dashboard') }}</a>
+</section>
+
+{% if not active_driver %}
+<section class="panel">
+  <h2>{{ _('upload.no_driver_title', 'No active driver selected') }}</h2>
+  <p class="muted">{{ _('upload.no_driver', 'Select a driver before uploading a video so the session can be stored correctly.') }}</p>
+  <a class="button primary" href="{{ url_for('drivers') }}">{{ _('common.select', 'Select') }} {{ _('common.driver', 'Driver') }}</a>
+</section>
+{% else %}
+<section class="panel">
+  <h2>{{ _('upload.for_driver', 'Upload for') }} {{ active_driver["display_name"] }}</h2>
+  <p class="muted">{{ _('upload.accepted', 'Accepted formats: mp4, avi, mov, mkv. Metadata is prepared during upload, then run the unified multimodal analysis from the session page.') }}</p>
+
+  <form method="post" enctype="multipart/form-data" class="form-stack">
+    <label>
+      {{ _('upload.video_file', 'Video file') }}
+      <input type="file" name="video" accept=".mp4,.avi,.mov,.mkv,video/mp4,video/x-msvideo,video/quicktime,video/x-matroska" required>
+    </label>
+    <button type="submit" class="button primary">{{ _('upload.submit', 'Upload video') }}</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

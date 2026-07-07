@@ -1,0 +1,693 @@
+\documentclass[conference,a4paper]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese,english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[protrusion=false,expansion=true]{microtype}
+\usepackage[unicode]{hyperref}
+\usepackage{bookmark}
+\usepackage[table]{xcolor}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usepackage{balance}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=blue,urlcolor=blue,pdftitle={Driver Drowsiness and Reduced Attention Detection Using a Multimodal In-Cabin Model}}
+\addto\captionsvietnamese{\renewcommand{\refname}{References}}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\emergencystretch}{1.5em}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{\fontsize{20}{22}\selectfont PHÁT HIỆN BUỒN NGỦ VÀ GIẢM CHÚ Ý CỦA TÀI XẾ BẰNG MÔ HÌNH ĐA PHƯƠNG THỨC TRONG CABIN}
+
+\author{
+\IEEEauthorblockN{Ngo Van Minh, Nguyen Thi Phuong}
+\IEEEauthorblockA{Group 01\\
+Dai Nam University\\
+Hanoi, Vietnam}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This paper studies multimodal driver-state recognition in an in-cabin setting. The core model, \textit{mmrt\_multimodal\_full\_v2\_t4x2}, is trained on the \textit{DBR-DMD-v1.1 CLEAN\_FULLMM\_5CLASS} dataset with four synchronized modalities: body, face, audio, and skeleton. The best verified checkpoint reaches a validation macro-F1 of 0.8066. Artifact-based analysis shows stable recognition for \textit{phone\_use}, \textit{eye\_closure}, and \textit{yawning}, while the dominant confusion remains between \textit{normal\_driving} and \textit{looking\_away}. These results support temporal multimodal fusion as a practical direction for driver safety assessment when a single visual cue is insufficient. The \textit{MDDAD} system is discussed only as an application layer for exposing the verified model through upload analysis, monitoring, and reporting workflows.
+\end{abstract}
+
+\begin{IEEEkeywords}
+driver safety, multimodal learning, in-cabin monitoring, drowsiness detection, distraction detection, risk scoring
+\end{IEEEkeywords}
+
+\selectlanguage{vietnamese}
+
+\noindent\textbf{\textit{Tóm tắt}}---Bài báo nghiên cứu bài toán nhận diện trạng thái buồn ngủ và suy giảm chú ý của tài xế trong cabin theo hướng đa phương thức. Mô hình trung tâm là \textit{mmrt\_multimodal\_full\_v2\_t4x2}, được huấn luyện trên bộ dữ liệu \textit{DBR-DMD-v1.1 CLEAN\_FULLMM\_5CLASS} với bốn nguồn tín hiệu đồng bộ gồm \textit{body}, \textit{face}, \textit{audio} và \textit{skeleton}. Checkpoint tốt nhất đạt \textit{macro-F1 = 0.8066} trên tập validation. Phân tích artifact cho thấy mô hình nhận diện ổn định các lớp \textit{phone\_use}, \textit{eye\_closure} và \textit{yawning}, trong khi sai số chính tập trung ở ranh giới giữa \textit{normal\_driving} và \textit{looking\_away}. Kết quả này cho thấy hợp nhất tín hiệu đa phương thức theo thời gian là một hướng khả thi cho giám sát an toàn tài xế khi tín hiệu thị giác đơn lẻ không đủ mô tả hành vi. Hệ thống \textit{MDDAD} chỉ được sử dụng như lớp ứng dụng hóa để biểu diễn mô hình qua các workflow phân tích video, giám sát và báo cáo.
+
+\vspace{0.75em}
+
+\section[Gioi Thieu]{Giới Thiệu}
+Giám sát an toàn tài xế trong cabin là một bài toán có ý nghĩa trực tiếp với an toàn giao thông, do nhiều hành vi nguy hiểm như buồn ngủ, mất tập trung, nhìn lệch hướng kéo dài, hoặc sử dụng điện thoại thường xuất hiện trong các khoảng thời gian ngắn nhưng có hậu quả lớn. Trong nhiều hệ thống sớm, quyết định thường dựa trên một kênh đầu vào duy nhất hoặc trên các ngưỡng heuristic. Cách tiếp cận này có thể hoạt động ở những tình huống rõ ràng, nhưng thường khó mở rộng khi hành vi được biểu hiện đồng thời qua khuôn mặt, tư thế cơ thể, động học skeleton và tín hiệu âm thanh.
+
+Trong bối cảnh đó, các hướng video backbone mạnh như SlowFast~\cite{slowfast}, TimeSformer~\cite{timesformer} hay Video Swin Transformer~\cite{videoswin} cho thấy tiềm năng biểu diễn cao cho chuỗi hình ảnh, nhưng bài toán trong cabin không chỉ nằm ở video branch. Thách thức trung tâm là cách đồng bộ và hợp nhất nhiều nguồn tín hiệu dị biệt nhau trong cùng một hệ suy luận theo thời gian. Từ góc nhìn này, đề tài không coi multimodal learning là phần mở rộng phụ của một model ảnh tĩnh, mà là trục chính để biến bài toán thành nhận diện hành vi tài xế theo clip, có ngữ cảnh và có khả năng chuyển giao sang hệ thống demo.
+
+Ý tưởng chính của báo cáo là tách rõ hai tầng. Tầng nghiên cứu tập trung vào baseline đa phương thức thống nhất \textit{mmrt\_multimodal\_full\_v2\_t4x2} trên bộ dữ liệu 5 lớp. Tầng thứ hai là \textit{MDDAD}, một application layer biến đầu ra mô hình thành workflow phân tích video tải lên, giám sát webcam, chấm điểm rủi ro và sinh báo cáo. Việc phân tách này quan trọng vì nó giúp báo cáo trung thực với trạng thái triển khai thực tế: baseline nghiên cứu đã được kiểm chứng trên dataset chuẩn, trong khi runtime của app hiện vẫn mang tính lai ghép để ưu tiên độ ổn định demo.
+
+Trong phạm vi báo cáo, các đóng góp chính được chốt lại theo hướng học thuật thay vì theo danh sách tính năng:
+\begin{enumerate}
+\item Xác lập một baseline nhận diện hành vi tài xế đa phương thức thống nhất trên bộ dữ liệu \textit{DBR-DMD-v1.1 CLEAN\_FULLMM\_5CLASS} với bốn modality \textit{body}, \textit{face}, \textit{audio} và \textit{skeleton}, thay cho cách nhìn đơn kênh hoặc heuristic thuần túy.
+\item Chuẩn hóa cách đọc bằng chứng thực nghiệm của bundle \textit{mmrt\_multimodal\_full\_v2\_t4x2}, bao gồm metric checkpoint, input contract, confusion pattern, và giới hạn tái lập; nhờ đó báo cáo chỉ khẳng định những gì đã xác minh trực tiếp.
+\item Chỉ ra điểm nghẽn quyết định của baseline hiện tại nằm ở biên \textit{normal\_driving}/\textit{looking\_away}, thay vì ở các lớp có tín hiệu hình thái rõ như \textit{phone\_use}, \textit{eye\_closure} và \textit{yawning}.
+\item Tách rời tầng nghiên cứu và tầng ứng dụng hóa \textit{MDDAD} để tránh lẫn giữa đóng góp mô hình và đóng góp triển khai demo.
+\end{enumerate}
+
+\section[Nghien Cuu Lien Quan]{Nghiên Cứu Liên Quan}
+Có thể chia các hướng nghiên cứu liên quan tới bài toán giám sát an toàn tài xế trong cabin thành ba nhóm. Nhóm thứ nhất là các hệ thống \textit{face-centric} hoặc heuristic-centric, trong đó quyết định chủ yếu dựa trên khuôn mặt, chuyển động mắt, độ mở miệng hoặc góc đầu~\cite{dms,mediapipe}. Đây là hướng rất thực dụng vì chi phí tính toán thấp, dễ tích hợp vào webcam runtime, và cho tín hiệu khá rõ với các hành vi như mắt nhắm kéo dài hoặc ngáp. Tuy nhiên, điểm yếu cơ bản của hướng này là nó coi phần lớn ngữ cảnh còn lại của cabin như nhiễu. Khi người lái chỉ lệch hướng nhìn ngắn, che khuất một phần mặt, hoặc biểu hiện hành vi qua tư thế thân trên nhiều hơn qua gương mặt, quyết định dựa vào một nhánh duy nhất thường trở nên kém ổn định.
+
+Nhóm thứ hai là các mô hình nhận diện hành động dựa trên video, vốn xem hành vi là một vấn đề ngữ cảnh không-thời gian thay vì một tập hợp trạng thái tĩnh. Các backbone như SlowFast~\cite{slowfast}, TimeSformer~\cite{timesformer} và Video Swin~\cite{videoswin} cho thấy khả năng mô hình hóa clip mạnh hơn đáng kể so với các pipeline khung-hình rời rạc. Dẫu vậy, trong bối cảnh cabin, việc chỉ tăng sức mạnh của video backbone vẫn chưa giải quyết trọn vẹn bài toán. Nhiều hành vi nguy cơ không chỉ được biểu lộ qua diện mạo hình ảnh, mà còn qua tín hiệu âm thanh, cấu trúc động học skeleton, hoặc sự phối hợp giữa hướng đầu và thao tác vùng tay. Nói cách khác, chuyển từ ảnh sang video là một bước cần, nhưng chưa đủ nếu bài toán được đặt như một hệ thống đa tín hiệu.
+
+Nhóm thứ ba là các nghiên cứu hành vi tài xế đa phương thức ở mức chi tiết hơn, tiêu biểu như Drive\&Act~\cite{driveact}. Điểm quan trọng rút ra từ hướng này là bài toán trong cabin cần được nhìn như một bài toán \textit{clip-level multimodal reasoning}: đầu vào không chỉ là chuỗi frame, mà là nhiều nguồn tín hiệu đồng bộ phải được hợp nhất trong cùng một quyết định. Đây cũng là điểm mà đề tài hiện tại lựa chọn làm trục chính. Thay vì tiếp tục mở rộng một pipeline heuristic hoặc đẩy toàn bộ hy vọng vào một video backbone lớn, mô hình nghiên cứu được xây dựng như một baseline đa phương thức thống nhất với bốn nhánh \textit{body}, \textit{face}, \textit{audio} và \textit{skeleton}.
+
+\begin{table}[t]
+\caption{So sánh các hướng nghiên cứu liên quan và vị trí của đề tài}
+\label{tab:related-works}
+\centering
+\scriptsize
+\begin{tabular}{L{1.15cm}L{1.45cm}L{1.0cm}L{1.35cm}L{1.45cm}}
+\toprule
+Hướng & Công trình đại diện & Đầu vào & Điểm mạnh & Hạn chế chính \\
+\midrule
+Heuristic khuôn mặt & Fatigue monitoring~\cite{dms}, MediaPipe~\cite{mediapipe} & Landmark & Rẻ, nhanh, hợp demo & Yếu khi che khuất, thiếu ngữ cảnh clip \\
+Video recognition đơn kênh & SlowFast~\cite{slowfast}, TimeSformer~\cite{timesformer}, Video Swin~\cite{videoswin} & RGB clip & Mạnh về ngữ cảnh thời gian & Chưa khai thác tốt audio, skeleton, quan hệ đa nguồn \\
+Hành vi cabin đa phương thức & Drive\&Act~\cite{driveact} & RGB, IR, depth, pose & Bám sát bản chất hành vi cabin & Khó tái lập đầy đủ, khó chuẩn hóa đầu vào \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Từ Bảng~\ref{tab:related-works}, có thể thấy khoảng trống mà đề tài nhắm tới không phải là thay thế hoàn toàn các hướng trước đó, mà là nối chúng lại theo một cách phù hợp hơn với bài toán hiện tại. Cụ thể, đề tài kế thừa tính thực dụng của các pipeline nhẹ, kế thừa tư duy suy luận theo clip của các backbone video, và tiến gần hơn tới bản chất hành vi cabin đa nguồn. Vì vậy, mô hình \textit{mmrt\_multimodal\_full\_v2\_t4x2} được định vị không như một kiến trúc ``lớn nhất'' hay ``mới nhất'', mà như một baseline nghiên cứu có phạm vi hợp lý cho bộ dữ liệu hiện có. Cách chọn các branch gọn cho từng modality, sau đó hợp nhất qua \textit{gated fusion} và suy luận chuỗi bằng \textit{BiGRU + attention}, giúp đề tài đạt ba mục tiêu cùng lúc: (1) bám sát bản chất đa nguồn của hành vi tài xế, (2) giữ chi phí mô hình hóa ở mức chấp nhận được với tập dữ liệu 2216 mẫu, và (3) tạo ra một lõi nghiên cứu đủ rõ để có thể phân tích lỗi, so sánh phiên bản và chuyển giao dần sang tầng ứng dụng.
+
+\section[Bai Toan Du Lieu Va Tien Xu Ly]{Bài Toán, Dữ Liệu Và Tiền Xử Lý}
+\subsection{Phát biểu bài toán}
+Ý tưởng cốt lõi của đề tài là xem giám sát tài xế như một bài toán \textit{phân loại clip đa phương thức theo thời gian}, thay vì nhận diện trạng thái trên từng khung hình rời rạc. Mỗi mẫu trong bộ dữ liệu nghiên cứu là một đơn vị clip có bốn modality đồng bộ: \textit{body}, \textit{face}, \textit{audio} và \textit{skeleton}. Đầu ra của mô hình là một trong năm lớp hành vi: \textit{normal\_driving}, \textit{eye\_closure}, \textit{yawning}, \textit{looking\_away} và \textit{phone\_use}. Cách phát biểu này có hai hệ quả trực tiếp. Thứ nhất, quyết định cuối cùng phải dựa trên bằng chứng tích lũy theo thời gian, không thể chỉ nhìn một frame đơn lẻ. Thứ hai, các modality không đóng vai trò đối xứng; từng nhánh mang các loại tín hiệu khác nhau và chỉ trở nên hữu ích khi được đặt trong cùng một ngữ cảnh clip.
+
+\subsection{Thống kê dữ liệu}
+Bộ dữ liệu \textit{DBR-DMD-v1.1 CLEAN\_FULLMM\_5CLASS} gồm 2216 mẫu, chia thành 1432 mẫu huấn luyện, 370 mẫu validation và 414 mẫu kiểm thử. Một điểm quan trọng của bộ dữ liệu này là các mẫu dùng để đánh giá đều có đủ bốn modality, nhờ đó việc so sánh các phiên bản mô hình không bị nhiễu bởi bài toán thiếu kênh đầu vào. Nói cách khác, chênh lệch kết quả giữa các phiên bản chủ yếu phản ánh chất lượng mô hình và chiến lược huấn luyện, thay vì phản ánh sự không đồng nhất của dữ liệu đầu vào.
+
+\begin{table}[t]
+\caption{Thống kê dữ liệu theo tập và theo lớp}
+\label{tab:data-stats}
+\centering
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+Tập & normal & eye & yawn & away & phone \\
+\midrule
+Train & 720 & 80 & 30 & 298 & 304 \\
+Val & 181 & 23 & 8 & 83 & 75 \\
+Test & 168 & 36 & 16 & 91 & 103 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Thống kê ở Bảng~\ref{tab:data-stats} cho thấy bài toán không chỉ có quy mô vừa phải mà còn có mất cân bằng lớp. Hệ quả là accuracy được dùng để tham khảo, nhưng không đủ để làm trục chính khi chọn checkpoint hoặc phân tích chất lượng mô hình.
+
+\begin{table}[t]
+\caption{Phân bố lớp toàn bộ bộ dữ liệu và mức mất cân bằng}
+\label{tab:class-imbalance}
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Lớp & Số mẫu & Tỷ lệ (\%) \\
+\midrule
+\textit{normal\_driving} & 1069 & 48.2 \\
+\textit{eye\_closure} & 139 & 6.3 \\
+\textit{yawning} & 54 & 2.4 \\
+\textit{looking\_away} & 472 & 21.3 \\
+\textit{phone\_use} & 482 & 21.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:class-imbalance} làm rõ vì sao \textit{macro-F1} phải được ưu tiên hơn accuracy. Lớp \textit{normal\_driving} chiếm gần một nửa bộ dữ liệu, trong khi \textit{yawning} chỉ chiếm 2.4\%. Nếu chỉ tối ưu accuracy, mô hình có thể đạt điểm tương đối cao ngay cả khi bỏ sót phần lớn các lớp hiếm nhưng có ý nghĩa an toàn rõ rệt. Vì thế, việc đánh giá bằng \textit{macro-F1} không chỉ là lựa chọn kỹ thuật, mà còn là một quyết định gắn trực tiếp với mục tiêu ứng dụng: không được để các hành vi nguy cơ thấp tần suất bị chìm trong lớp bình thường chiếm ưu thế.
+
+\begin{table}[t]
+\caption{So sánh bộ dữ liệu nghiên cứu với một số benchmark liên quan}
+\label{tab:dataset-comparison}
+\centering
+\scriptsize
+\begin{tabular}{L{1.2cm}L{0.8cm}L{0.8cm}L{1.1cm}L{2.15cm}}
+\toprule
+Dataset & Kiểu dữ liệu & Quy mô & Đầu vào & Giá trị đối với bài toán \\
+\midrule
+DROZY & Drowsy & nhỏ & NIR + sinh lý & Phù hợp cho buồn ngủ sinh lý, hẹp về hành vi cabin tổng quát \\
+Drive\&Act & Fine-grain & lớn & RGB, IR, depth, pose & Mạnh về hành vi cabin chi tiết, nhãn rộng, đa view \\
+3MDAD & Driving & vừa & RGB + depth, 2 view & Hữu ích cho mất chú ý trong bối cảnh ngày/đêm \\
+DBR-DMD-v1.1 & MM clip & 2216 mẫu & body, face, audio, skeleton & Gắn trực tiếp với baseline 5 lớp thống nhất của đề tài \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:dataset-comparison} giúp đặt bộ dữ liệu đang dùng vào đúng bối cảnh. Nếu nhìn theo chiều sâu hành vi, \textit{Drive\&Act} giàu hơn và có phạm vi nhãn rất rộng. Nếu nhìn theo drowsiness sinh lý, \textit{DROZY} lại phù hợp hơn. Tuy nhiên, đối với mục tiêu hiện tại của đề tài, tức là thiết lập một baseline clip-level đa phương thức cho 5 lớp hành vi an toàn tài xế, \textit{DBR-DMD-v1.1 CLEAN\_FULLMM\_5CLASS} là lựa chọn hợp lý hơn vì nhãn, định dạng input và giao thức đánh giá gắn trực tiếp với bài toán đang giải.
+
+\subsection{Hợp đồng đầu vào và tiền xử lý}
+Để báo cáo không nhầm lẫn giữa ``artifact đã xác minh'' và ``chi tiết tái dựng hợp lý'', phần này tách rõ hai lớp thông tin. Lớp thứ nhất là \textit{input contract} có thể đọc trực tiếp từ checkpoint và các script đi kèm: hai nhánh hình ảnh \textit{body} và \textit{face} nhận clip cố định 16 frame; nhánh \textit{audio} nhận đặc trưng \textit{log-mel} kích thước $64 \times 40$; nhánh \textit{skeleton} nhận tensor kích thước $16 \times 50$. Lớp thứ hai là cách diễn giải tiền xử lý ở mức phương pháp luận: một video cabin phải được chia thành các cửa sổ thời gian đồng bộ, từ đó sinh ra bốn luồng tín hiệu ăn khớp với nhau trước khi đưa vào mô hình. Báo cáo chỉ khẳng định chắc lớp thứ nhất; lớp thứ hai được dùng để làm rõ pipeline nghiên cứu mà không overclaim những siêu tham số tiền xử lý cuối cùng chưa được đóng gói đầy đủ trong bundle.
+
+\begin{table}[t]
+\caption{Hợp đồng đầu vào của mô hình đa phương thức thống nhất}
+\label{tab:input-contract}
+\centering
+\scriptsize
+\begin{tabular}{L{0.85cm}L{1.15cm}L{1.2cm}L{0.95cm}L{1.65cm}}
+\toprule
+Nhánh & Nguồn thô & Biểu diễn đồng bộ & Kích thước & Vai trò chính \\
+\midrule
+Body & video cabin & clip RGB thân trên & 16 frame & tư thế lái, vai-tay, thao tác lớn \\
+Face & video cabin & clip RGB khuôn mặt & 16 frame & mắt, miệng, góc đầu, biểu hiện mặt \\
+Audio & sóng âm cabin & log-mel spectrogram & $64 \times 40$ & lời nói và tín hiệu âm thanh bổ trợ \\
+Skeleton & landmark theo frame & chuỗi landmark chuẩn hóa & $16 \times 50$ & động học đầu-cổ-vai theo thời gian \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ở mức bài toán, một mẫu không nên được hiểu như ``một ảnh kèm vài đặc trưng phụ'', mà như một \textit{clip đa phương thức đồng bộ}. Nếu ký hiệu video đầu vào là $V$, một cửa sổ thời gian bất kỳ được rút gọn thành mẫu
+\begin{equation}
+\mathcal{X} = \{X^{b}, X^{f}, X^{a}, X^{s}\},
+\end{equation}
+trong đó $X^{b}$ và $X^{f}$ là hai clip RGB theo thời gian, $X^{a}$ là biểu diễn âm thanh và $X^{s}$ là chuỗi landmark. Cách phát biểu này quan trọng ở hai điểm. Thứ nhất, mọi quyết định cuối cùng đều là quyết định \textit{clip-level}, không phải \textit{frame-level}. Thứ hai, sự đồng bộ thời gian giữa bốn modality là điều kiện bắt buộc để hợp nhất đa nguồn có ý nghĩa.
+
+Về mặt tiền xử lý, luồng dựng mẫu hợp lý cho một video cabin gồm bốn bước: (1) chọn cửa sổ thời gian và lấy các frame đại diện; (2) tạo nhánh \textit{body} từ vùng ảnh cabin chính; (3) tạo nhánh \textit{face} bằng cách định vị và cắt khuôn mặt; (4) trích âm thanh và landmark theo cùng cửa sổ đó. Báo cáo không gắn cứng mọi siêu tham số chưa có trong artifact, nhưng vẫn có thể mô tả đúng bản chất xử lý: \textit{body} và \textit{face} là tín hiệu thị giác theo chuỗi; \textit{skeleton} là tín hiệu hình học theo chuỗi; còn \textit{audio} là tín hiệu một chiều được đưa về miền thời gian-tần số.
+
+Với nhánh âm thanh, nếu $x^{a}$ là waveform của một cửa sổ video, biểu diễn đầu vào được đưa về miền \textit{log-mel} dưới dạng
+\begin{equation}
+\mathrm{Mel}(f) = 2595 \log_{10}\left(1 + \frac{f}{700}\right),
+\end{equation}
+\begin{equation}
+X^{a} = \log \big(\mathrm{MelSpec}(x^{a}) + \epsilon\big),
+\end{equation}
+trong đó $\epsilon > 0$ được dùng để ổn định phép lấy log. Hai công thức này không nhằm công bố lại chi tiết toàn bộ script tiền xử lý, mà để làm rõ bản chất của đầu vào \textit{audio}: mô hình không ăn trực tiếp waveform thô, mà ăn một biểu diễn cô đọng đồng thời thông tin thời gian và phổ tần phù hợp với nhận dạng hành vi trong cabin.
+
+Với nhánh skeleton, một clip được xem như chuỗi điểm mốc
+\begin{equation}
+X^{s} \in \mathbb{R}^{T \times J \times C},
+\end{equation}
+trong đó $T=16$ là số bước thời gian, còn tích $J \times C = 50$ phản ánh số giá trị landmark sau khi làm phẳng theo tọa độ chuẩn hóa. Điểm mấu chốt ở đây không phải con số 50 tự thân, mà là việc landmark đã được đưa về một chuẩn hình học nhất quán để mô hình học được động học tương đối thay vì bị lệ thuộc quá mạnh vào vị trí tuyệt đối trong khung hình.
+
+\begin{figure*}[t]
+\caption{Luồng dựng một mẫu đa phương thức từ video cabin: từ cửa sổ thời gian đồng bộ đến bốn đầu vào của mô hình}
+\label{fig:preprocessing-pipeline}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+font=\small,
+box/.style={draw, rounded corners=2pt, align=center, minimum height=9mm, inner sep=4pt},
+src/.style={box, fill=blue!8, minimum width=23mm},
+pre/.style={box, fill=cyan!7, minimum width=33mm},
+branch/.style={box, fill=orange!8, minimum width=31mm},
+artifact/.style={box, fill=green!8, minimum width=29mm},
+arrow/.style={-{Latex[length=2mm]}, thick, draw=blue!55!black},
+note/.style={font=\scriptsize, text=black!75}
+]
+\node[src] (video) at (0,0) {\textbf{Video cabin}\\RGB + audio};
+\node[pre] (window) at (3.5,0) {\textbf{Cửa sổ clip}\\đồng bộ theo thời gian};
+\node[pre] (sample) at (7.2,0) {\textbf{Lấy mẫu theo clip}\\16 mốc thời gian};
+
+\node[branch] (bodypre) at (10.9,2.1) {\textbf{Nhánh body}\\frame cabin / thân trên};
+\node[branch] (facepre) at (10.9,0.7) {\textbf{Nhánh face}\\crop khuôn mặt};
+\node[branch] (audiopre) at (10.9,-0.7) {\textbf{Nhánh audio}\\cắt sóng âm đồng bộ};
+\node[branch] (skelpre) at (10.9,-2.1) {\textbf{Nhánh skeleton}\\landmark theo frame};
+
+\node[artifact] (bodyx) at (15.0,2.1) {$X^b$\\clip RGB 16 frame};
+\node[artifact] (facex) at (15.0,0.7) {$X^f$\\clip RGB 16 frame};
+\node[artifact] (audiox) at (15.0,-0.7) {$X^a$\\log-mel $64 \times 40$};
+\node[artifact] (skelx) at (15.0,-2.1) {$X^s$\\tensor $16 \times 50$};
+
+\draw[arrow] (video) -- (window);
+\draw[arrow] (window) -- (sample);
+\draw[arrow] (sample.east) -- ++(0.8,0) |- (bodypre.west);
+\draw[arrow] (sample.east) -- ++(0.8,0) |- (facepre.west);
+\draw[arrow] (sample.east) -- ++(0.8,0) |- (audiopre.west);
+\draw[arrow] (sample.east) -- ++(0.8,0) |- (skelpre.west);
+\draw[arrow] (bodypre.east) -- (bodyx.west);
+\draw[arrow] (facepre.east) -- (facex.west);
+\draw[arrow] (audiopre.east) -- (audiox.west);
+\draw[arrow] (skelpre.east) -- (skelx.west);
+
+\node[note, above=1.5mm of bodyx] {thị giác thân người};
+\node[note, above=1.5mm of facex] {thị giác khuôn mặt};
+\node[note, below=1.5mm of audiox] {thời gian--tần số};
+\node[note, below=1.5mm of skelx] {hình học theo chuỗi};
+\end{tikzpicture}
+}
+\end{figure*}
+
+Hình~\ref{fig:preprocessing-pipeline} được vẽ lại theo hướng hệ thống hơn: người đọc không chỉ thấy ``bốn modality đi vào fusion'', mà thấy rõ quá trình từ video thô đến \textit{sample} nghiên cứu. Đây là điểm cần thiết cho một báo cáo học thuật nghiêm túc, vì nó khóa lại đơn vị phân tích thực sự của mô hình. Không phải video toàn cục, cũng không phải frame rời rạc, mà là các \textit{cửa sổ clip đồng bộ} được ánh xạ thành bốn tensor đầu vào có nghĩa.
+
+Ở mức ngữ nghĩa, bốn modality này không cạnh tranh nhau mà bù trừ cho nhau. Nhánh \textit{face} mang tín hiệu rõ nhất cho \textit{eye\_closure} và \textit{yawning}; \textit{body} và \textit{skeleton} mạnh hơn ở các tình huống cần đọc hướng chú ý hoặc thay đổi tư thế vùng thân trên; \textit{audio} thường không phải nguồn quyết định chính nhưng vẫn hữu ích khi tín hiệu thị giác yếu hoặc không ổn định. Chính logic bù trừ này là lý do mô hình được thiết kế theo hướng hợp nhất có điều kiện thay vì coi mọi modality luôn quan trọng như nhau.
+
+\section[Kien Truc De Xuat]{Kiến Trúc Đề Xuất}
+Mô hình nghiên cứu được xây dựng như một \textit{baseline đa phương thức thống nhất theo clip}, trong đó mỗi nguồn tín hiệu được mã hóa bằng một nhánh phù hợp với bản chất dữ liệu, sau đó mới được đưa về cùng một không gian quyết định. Điểm quan trọng của kiến trúc không nằm ở việc dùng backbone lớn nhất, mà ở việc giải quyết đúng bài toán: hành vi tài xế trong cabin là bài toán \textit{hợp nhất bằng chứng đa nguồn theo thời gian}. Vì vậy, phần kiến trúc phải làm rõ ba câu hỏi: từng modality được mã hóa như thế nào, các modality được hợp nhất ra sao, và bằng chứng theo thời gian được chuyển thành xác suất lớp như thế nào.
+
+\begin{figure*}[t]
+\caption{Kiến trúc baseline đa phương thức thống nhất: từ bốn nhánh đặc trưng đến hợp nhất có điều kiện, suy luận theo thời gian và đầu ra 5 lớp}
+\label{fig:model-architecture}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+font=\small,
+box/.style={draw, rounded corners=2pt, align=center, minimum height=8.5mm, inner sep=4pt},
+input/.style={box, fill=blue!8, minimum width=23mm},
+enc/.style={box, fill=orange!10, minimum width=31mm},
+core/.style={box, fill=red!9, minimum width=33mm},
+outputbox/.style={box, fill=green!10, minimum width=30mm},
+arrow/.style={-{Latex[length=2mm]}, thick, draw=blue!55!black},
+stage/.style={font=\scriptsize\bfseries, text=black!75}
+]
+\node[input] (xb) at (0,2.4) {$X^b$\\body clip};
+\node[input] (xf) at (0,0.8) {$X^f$\\face clip};
+\node[input] (xa) at (0,-0.8) {$X^a$\\log-mel};
+\node[input] (xs) at (0,-2.4) {$X^s$\\skeleton};
+
+\node[enc] (eb) at (4.0,2.4) {\textbf{Body encoder}\\MobileNetV3-Small};
+\node[enc] (ef) at (4.0,0.8) {\textbf{Face encoder}\\MobileNetV3-Small};
+\node[enc] (ea) at (4.0,-0.8) {\textbf{Audio encoder}\\MLP + GRU};
+\node[enc] (es) at (4.0,-2.4) {\textbf{Skeleton encoder}\\MLP + BiGRU};
+
+\node[core] (fusion) at (8.35,0) {\textbf{Gated fusion}\\ước lượng độ tin cậy theo modality};
+\node[core] (temporal) at (12.55,0) {\textbf{BiGRU + attention}\\suy luận trình tự theo clip};
+\node[outputbox] (head) at (16.6,0) {\textbf{5-class classifier}\\normal / eye / yawn / away / phone};
+
+\draw[arrow] (xb.east) -- (eb.west);
+\draw[arrow] (xf.east) -- (ef.west);
+\draw[arrow] (xa.east) -- (ea.west);
+\draw[arrow] (xs.east) -- (es.west);
+\draw[arrow] (eb.east) -- ++(0.6,0) |- (fusion.west);
+\draw[arrow] (ef.east) -- ++(0.6,0) |- (fusion.west);
+\draw[arrow] (ea.east) -- ++(0.6,0) |- (fusion.west);
+\draw[arrow] (es.east) -- ++(0.6,0) |- (fusion.west);
+\draw[arrow] (fusion.east) -- (temporal.west);
+\draw[arrow] (temporal.east) -- (head.west);
+
+\node[stage] at (0,3.35) {Đầu vào đồng bộ};
+\node[stage] at (4.0,3.35) {Mã hóa theo modality};
+\node[stage] at (8.35,1.45) {Hợp nhất đa nguồn};
+\node[stage] at (12.55,1.45) {Temporal reasoning};
+\node[stage] at (16.6,1.45) {Phân loại hành vi};
+\end{tikzpicture}
+}
+\end{figure*}
+
+Hình~\ref{fig:model-architecture} được dựng lại theo đúng tinh thần một sơ đồ hệ thống học thuật: người đọc nhìn thấy luồng đi từ đầu vào, qua mã hóa riêng cho từng modality, qua tầng hợp nhất có điều kiện, rồi mới đến temporal reasoning và phân lớp. Cách vẽ này tốt hơn kiểu ``bốn ô nối vào một ô'' vì nó cho thấy rõ đâu là tín hiệu đầu vào, đâu là encoder, đâu là tầng ra quyết định và đâu là đầu ra cuối cùng.
+
+\subsection{Nguyên tắc thiết kế kiến trúc}
+Kiến trúc được xây theo ba nguyên tắc. Thứ nhất là \textit{đúng modality}: mỗi nguồn tín hiệu đi qua một nhánh phản ánh đúng dạng dữ liệu của nó, thay vì ép toàn bộ về một encoder chung. Thứ hai là \textit{hợp nhất có điều kiện}: mô hình không giả định bốn modality luôn đóng góp ngang nhau, mà học cách điều tiết trọng số theo clip. Thứ ba là \textit{quyết định theo ngữ cảnh thời gian}: phân loại không được thực hiện trên từng frame độc lập, mà trên biểu diễn đã đi qua tầng tích lũy chuỗi.
+
+Ba nguyên tắc này đặc biệt phù hợp với dữ liệu cabin quy mô vừa. Nếu dùng một kiến trúc quá đơn giản, mô hình dễ bỏ sót quan hệ giữa các nguồn tín hiệu. Nếu dùng video transformer lớn cho toàn hệ, chi phí huấn luyện và rủi ro quá khớp sẽ tăng mạnh trên tập dữ liệu 2216 mẫu. Thiết kế hiện tại vì vậy mang tính ``vừa đủ sâu'': đủ để biểu diễn tương tác giữa \textit{body}, \textit{face}, \textit{audio} và \textit{skeleton}, nhưng vẫn giữ được khả năng giải thích và khả năng phân tích lỗi theo từng tầng.
+
+\subsection{Chi tiết hơn về fusion và temporal reasoning}
+Ký hiệu $E_m(\cdot)$ là encoder của modality $m \in \{b,f,a,s\}$. Sau bước mã hóa riêng, mỗi đầu vào được ánh xạ thành một chuỗi đặc trưng
+\begin{equation}
+H_m = E_m(X^m) = [h^m_1, h^m_2, \ldots, h^m_T].
+\end{equation}
+Hai nhánh thị giác \textit{body} và \textit{face} dùng \textit{MobileNetV3-Small}~\cite{mobilenetv3} để giữ cân bằng giữa năng lực biểu diễn và chi phí tính toán. Nhánh \textit{audio} dùng \textit{MLP + GRU}~\cite{gru} trên biểu diễn \textit{log-mel}, trong khi nhánh \textit{skeleton} dùng \textit{MLP + BiGRU} để khai thác động học landmark theo chuỗi.
+
+Sau khi từng modality đã có embedding riêng, tầng fusion không cộng gộp cứng mà học một hệ số cổng cho từng nhánh:
+\begin{equation}
+g_m = \sigma(W_m \bar{h}_m + b_m),
+\end{equation}
+\begin{equation}
+\tilde{h}_m = g_m \odot \bar{h}_m,
+\end{equation}
+trong đó $\bar{h}_m$ là biểu diễn đã được chiếu về cùng không gian đặc trưng, $\sigma(\cdot)$ là hàm sigmoid, và $\odot$ là phép nhân từng phần tử. Khi đó, vector hợp nhất tại bước thời gian $t$ có thể được viết gọn là
+\begin{equation}
+z_t = \sum_{m \in \{b,f,a,s\}} \tilde{h}^{m}_t.
+\end{equation}
+Ý nghĩa của tầng này rất quan trọng trong bối cảnh cabin: ở nhiều clip, chỉ một vài nguồn tín hiệu thực sự mạnh, trong khi một số nguồn khác lại bị che khuất, nhiễu âm thanh hoặc dao động nhỏ khó phân tách. Gated fusion vì vậy giúp mô hình học cách ``tin có điều kiện'' thay vì tin đều mọi nguồn.
+
+Sau fusion, chuỗi biểu diễn chung $Z = [z_1,\ldots,z_T]$ được đưa vào khối suy luận theo thời gian:
+\begin{equation}
+H = \mathrm{BiGRU}(Z) = [u_1, u_2, \ldots, u_T].
+\end{equation}
+BiGRU chịu trách nhiệm tích lũy bằng chứng trước-sau trong clip, từ đó chuyển bài toán từ ``nhiều đặc trưng đồng thời'' thành ``một diễn giải hành vi có ngữ cảnh''. Trên đỉnh chuỗi này, attention pooling chọn lọc những đoạn quan trọng nhất:
+\begin{equation}
+\alpha_t = \frac{\exp(w^\top u_t)}{\sum_{k=1}^{T} \exp(w^\top u_k)},
+\end{equation}
+\begin{equation}
+v = \sum_{t=1}^{T} \alpha_t u_t.
+\end{equation}
+Nếu BiGRU trả lời câu hỏi ``chuỗi này diễn tiến như thế nào'', thì attention pooling trả lời câu hỏi ``trong chuỗi đó, đoạn nào đáng tin nhất để ra quyết định''. Sự kết hợp này đặc biệt phù hợp với các hành vi có biên thời gian ngắn như \textit{looking\_away}, nơi bằng chứng có thể chỉ xuất hiện mạnh trong một phần ngắn của clip.
+
+\begin{table}[t]
+\caption{Diễn giải vai trò của các tầng trong phần fusion-temporal head}
+\label{tab:fusion-temporal}
+\centering
+\scriptsize
+\begin{tabular}{L{1.2cm}L{1.55cm}L{3.1cm}}
+\toprule
+Tầng & Đầu ra trung gian & Vai trò chính \\
+\midrule
+Branch encoder & embedding theo modality & Giữ thông tin đặc thù của body, face, audio và skeleton \\
+Gated fusion & biểu diễn hợp nhất & Điều chỉnh trọng số đóng góp giữa các modality \\
+BiGRU & chuỗi đặc trưng có ngữ cảnh & Mô hình hóa quan hệ trước-sau trong clip \\
+Attention pooling & vector clip-level & Nhấn vào đoạn bằng chứng mạnh nhất trước khi phân lớp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:fusion-temporal} giúp làm cho kiến trúc bớt ``hộp đen'' trước người chấm. Thay vì chỉ thấy tên khối, người đọc nhìn được vai trò chức năng của từng tầng và hiểu vì sao kiến trúc này hợp với bài toán hơn một pipeline chỉ dựa trên frame đơn lẻ hoặc heuristic tách rời.
+
+\subsection{Từ biểu diễn đến quyết định lớp}
+Vector clip-level $v$ sau attention pooling được đưa qua đầu phân loại cuối cùng:
+\begin{equation}
+p = \mathrm{softmax}(W_c v + b_c),
+\end{equation}
+trong đó $p \in \mathbb{R}^{5}$ là phân phối xác suất trên năm lớp hành vi. Do dữ liệu mất cân bằng rõ rệt giữa các lớp, một mục tiêu huấn luyện hợp lý cho bài toán này là cross-entropy có trọng số:
+\begin{equation}
+\mathcal{L} = - \sum_{c=1}^{C} w_c y_c \log p_c ,
+\end{equation}
+với $C=5$ và $w_c$ là hệ số lớp. Artifact huấn luyện của phiên bản \textit{v2} còn cho biết mô hình dùng \textit{label smoothing}; khi đó nhãn cứng $y_c$ được thay bằng
+\begin{equation}
+y'_c = (1-\varepsilon) y_c + \frac{\varepsilon}{C},
+\end{equation}
+và hàm mất mát được tính trên $y'_c$. Việc viết rõ mục tiêu huấn luyện theo cách này giúp khóa lại bản chất tối ưu hóa của mô hình: không chỉ học ``đúng lớp'', mà còn học theo cách bớt quá tự tin trên các biên quyết định khó.
+
+Một cách nhìn hữu ích hơn về toàn bộ pipeline là xem đầu ra cuối cùng như kết quả của một chuỗi lọc bằng chứng. Ở tầng encoder, mô hình trả lời ``trong từng modality có tín hiệu gì''. Ở tầng fusion, mô hình trả lời ``trong clip này nên tin modality nào hơn''. Ở tầng temporal head, mô hình trả lời ``bằng chứng đó có bền đủ lâu và đủ nhất quán để đại diện cho cả clip hay không''. Chỉ sau ba bước đó lớp hành vi mới được chốt. Trật tự này giải thích vì sao mô hình làm tốt ở \textit{phone\_use}, \textit{eye\_closure} và \textit{yawning}: các lớp này thường có ít nhất một nhánh mang tín hiệu rất sắc. Ngược lại, với \textit{looking\_away}, mọi tầng đều khó hơn vì bằng chứng yếu hơn, ngắn hơn và dễ bị hòa vào nền \textit{normal\_driving}.
+
+Về mặt đánh giá, diễn giải trên cũng cho thấy một điểm mạnh của baseline: khi mô hình sai, ta vẫn có thể phỏng đoán tầng cơ chế nào đáng nghi nhất. Nếu một lớp có biểu hiện rõ nhưng vẫn bị nhầm rộng, nghi vấn thường nằm ở tầng biểu diễn. Nếu biểu diễn lớp đã đủ mạnh nhưng xác suất cuối cùng vẫn lẫn giữa vài lớp gần nhau, nghi vấn sẽ chuyển sang fusion hoặc temporal reasoning. Vì artifact hiện có thiên về đầu ra xác suất và confusion pattern, báo cáo giữ kết luận ở mức thận trọng: nút thắt của phiên bản hiện tại nằm gần hơn với tầng hợp nhất--quyết định so với tầng cảm nhận thô.
+
+\section[Thiet Lap Huan Luyen Va Danh Gia]{Thiết Lập Huấn Luyện Và Đánh Giá}
+Checkpoint trung tâm của báo cáo là \textit{mmrt\_multimodal\_full\_v2\_t4x2}. Dựa trên artifact đã kiểm chứng, quá trình huấn luyện diễn ra trên môi trường Kaggle với GPU \textit{T4x2}. So với \textit{v1}, phiên bản \textit{v2} giữ nguyên hướng mô hình nhưng chọn cách huấn luyện chặt hơn thông qua \textit{DataParallel}, AMP, batch size lớn hơn, \textit{sqrt inverse} class weighting và \textit{label smoothing}. Theo training scaffold đi kèm, metric checkpoint chính là \textit{validation 5-class macro-F1}; test metric chỉ được công bố khi tập test chứa đủ 5 lớp.
+
+\subsection{Câu hỏi thực nghiệm}
+Phần thực nghiệm của báo cáo thực chất xoay quanh bốn câu hỏi. Câu hỏi thứ nhất: một baseline đa phương thức thống nhất có thực sự vượt qua giai đoạn nguyên mẫu hay không. Câu hỏi thứ hai: sau khi đã có baseline chạy ổn định, tinh chỉnh huấn luyện còn tạo thêm ích lợi thực sự hay chỉ là nhiễu thống kê. Câu hỏi thứ ba: sai số của mô hình phân bố đồng đều trên mọi lớp hay tập trung ở một biên quyết định cụ thể. Câu hỏi thứ tư: bundle hiện có đủ loại bằng chứng nào để hỗ trợ các kết luận trên. Việc phát biểu bốn câu hỏi này giúp phần \textit{Experiments} mang cấu trúc phản biện rõ hơn: mỗi bảng và mỗi artifact đều được đặt vào vai trò trả lời một câu hỏi nghiên cứu cụ thể, thay vì chỉ đứng như các con số rời rạc.
+
+\begin{table}[t]
+\caption{Kết quả chính của ba giai đoạn phát triển mô hình}
+\label{tab:main-results}
+\centering
+\small
+\begin{tabular}{p{2.65cm}cc}
+\toprule
+Giai đoạn mô hình & Val macro-F1 & Accuracy \\
+\midrule
+Smoke prototype & 0.4085 & -- \\
+Unified multimodal baseline (v1) & 0.8014 & -- \\
+Training-refined proposed model (v2) & 0.8066 & 0.8054 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:main-results} được trình bày lại theo tên gọi có nghĩa với người đọc thay vì chỉ giữ ký hiệu nội bộ \textit{smoke}, \textit{v1}, \textit{v2}. Cách đặt tên này giúp hội đồng nhìn rõ tiến trình nghiên cứu: từ một nguyên mẫu kiểm tra luồng (\textit{smoke prototype}), mô hình tiến lên một baseline đa phương thức thống nhất chạy ổn định (\textit{v1}), rồi được tinh chỉnh huấn luyện để tạo ra checkpoint đề xuất cuối cùng (\textit{v2}). Bước nhảy lớn nhất xảy ra ở giai đoạn chuyển từ nguyên mẫu sang baseline hợp nhất, xác nhận rằng giá trị cốt lõi của đề tài nằm ở việc thiết lập được pipeline multimodal thống nhất. Giai đoạn từ \textit{v1} sang \textit{v2} chỉ tăng nhẹ 0.0052 macro-F1, cho thấy sau khi lõi mô hình đã thành hình, dư địa cải thiện còn lại nằm nhiều hơn ở biên lớp khó và độ bao phủ thực nghiệm hơn là ở các chỉnh sửa huấn luyện cục bộ.
+
+\begin{table}[t]
+\caption{So sánh baseline tham chiếu và mô hình đề xuất cuối}
+\label{tab:baseline-vs-proposed}
+\centering
+\small
+\begin{tabular}{L{1.75cm}L{2.15cm}L{0.95cm}L{0.85cm}}
+\toprule
+Phiên bản & Khác biệt chính & Macro-F1 & Lệch \\
+\midrule
+Baseline hợp nhất (\textit{v1}) & Bản hợp nhất đầu tiên chạy ổn định, có log theo epoch. & 0.8014 & -- \\
+Mô hình đề xuất (\textit{v2}) & Giữ lõi kiến trúc, tinh chỉnh huấn luyện và cân bằng lớp. & 0.8066 & +0.005 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:baseline-vs-proposed} làm rõ một điểm rất quan trọng cho phần bảo vệ: mô hình đề xuất không phải là một kiến trúc hoàn toàn mới tách rời khỏi baseline, mà là một bước tinh chỉnh có kiểm soát trên một lõi đã chạy được. Điều này khiến đóng góp của đề tài trở nên thuyết phục hơn. Thay vì trình bày như một chuỗi thử nghiệm rời rạc, báo cáo cho thấy một tiến trình nghiên cứu có logic: xác lập baseline, nhận diện giới hạn, rồi nâng chất lượng theo đúng điểm yếu quan sát được.
+
+\subsection{Khả năng tái lập}
+Báo cáo phân biệt rõ hai mức độ. Ở mức thứ nhất, có thể tái lập hợp đồng đầu vào, logic chọn checkpoint theo \textit{macro-F1}, các thay đổi huấn luyện chính của \textit{v2}, cùng như artifact dự đoán trên validation. Ở mức thứ hai, một số siêu tham số chi tiết như learning rate cuối, batch size chính xác, số epoch tốt nhất hay chi phí huấn luyện theo epoch chưa được đóng gói đủ trong bundle \textit{full\_v2}. Vì vậy, báo cáo chỉ claim những gì đã xác minh trực tiếp, thay vì điền phần thiếu bằng suy đoán.
+
+\subsection{Giao thức đánh giá}
+Do dữ liệu mất cân bằng, \textit{macro-F1} được dùng làm mục tiêu chính để so sánh các phiên bản. Theo scaffold huấn luyện, báo cáo chuẩn cho phép theo dõi thêm \textit{per-class recall}, confusion matrix và balanced accuracy. Trong bundle hiện có, \textit{v1} lưu \textit{history.json} nên có thể quan sát quá trình tiến triển theo epoch; ngược lại, \textit{v2} chỉ lưu checkpoint cuối cùng cùng các bảng dự đoán. Khác biệt này giúp làm rõ thứ bậc bằng chứng: báo cáo có thể khẳng định khá chắc về kết quả validation và pattern lỗi, nhưng chưa đủ bằng chứng để mở rộng thành claim mạnh về test-set generalization, ablation từng modality, hay benchmark realtime.
+
+Ở cấp độ phương pháp luận, việc ưu tiên \textit{macro-F1} thay vì accuracy có ý nghĩa đặc biệt quan trọng với đề tài này. Một hệ thống an toàn tài xế không thể được xem là tốt nếu nó đạt accuracy nhờ làm đúng lớp \textit{normal\_driving} trong khi bỏ sót các lớp hiếm nhưng nguy cơ cao. Vì vậy, báo cáo cố ý xem đây là một bài toán \textit{đánh đổi công bằng giữa các lớp hành vi} hơn là bài toán tối đa hóa tỷ lệ đúng toàn cục. Cách đặt chuẩn đánh giá này cũng làm cho việc phân tích confusion matrix trở thành bước bắt buộc, chứ không phải phần minh họa thêm.
+
+\section[Thuc Nghiem Va Phan Tich Ket Qua]{Thực Nghiệm Và Phân Tích Kết Quả}
+\subsection{Khung đọc kết quả}
+Toàn bộ kết quả nên được đọc theo một trật tự ba lớp. Lớp thứ nhất là \textit{mức tiến bộ định lượng}: liệu mô hình có vượt qua baseline trước đó hay không. Lớp thứ hai là \textit{mức phân bố sai số}: sự cải thiện có đến đồng đều trên toàn bộ không gian hành vi hay chỉ nằm ở một vài lớp. Lớp thứ ba là \textit{mức giá trị học thuật}: từ những con số đó, ta học được điều gì về bản chất bài toán cabin đa phương thức. Chính lớp thứ ba mới là phần quyết định sức nặng của báo cáo trước hội đồng, bởi nó biến kết quả từ ``một checkpoint tốt hơn'' thành ``một kết luận nghiên cứu có ý nghĩa''.
+
+\subsection{Tiến triển từ v1 sang v2}
+Artifact \textit{v1} cho phép quan sát rằng \textit{val macro-F1} đã đi từ 0.6957 trong hai epoch đầu lên 0.8014 ở epoch 3, sau đó giảm mạnh ở epoch 4. Diễn biến này cho thấy baseline ban đầu đã đủ sức thoát khỏi giai đoạn chưa hội tụ, nhưng cũng bộc lộ tính nhạy với huấn luyện nếu không có cơ chế kiểm soát tốt hơn. Phiên bản \textit{v2} được đọc như một bước tinh chỉnh huấn luyện chứ không phải một lần thay kiến trúc lớn. Việc \textit{v2} chỉ cải thiện vừa phải lên 0.8066 là một phát hiện đáng giá: sau khi pipeline multimodal thống nhất đã vận hành ổn, điểm nghẽn không còn nằm ở chuyện ``có multimodal hay không'', mà nằm ở chất lượng ranh giới quyết định giữa các lớp gần nhau.
+
+Nếu chỉ nhìn vào độ tăng $+0.0052$, người đọc có thể cho rằng \textit{v2} chỉ nhỉnh hơn \textit{v1} rất ít. Tuy nhiên, trong ngữ cảnh bài toán hiện tại, ý nghĩa của bước tăng này không nằm ở độ lớn tuyệt đối mà nằm ở chỗ nó xảy ra sau khi baseline đã ở ngưỡng tương đối cao. Nói cách khác, giai đoạn \textit{v1} $\rightarrow$ \textit{v2} không còn là ``làm cho mô hình biết bài toán'', mà là ``làm cho mô hình quyết định sắc hơn ở vùng khó''. Đây là một dạng cải thiện có giá trị học thuật cao hơn nhiều so với các bước nhảy lớn từ một nguyên mẫu còn chưa hội tụ.
+
+\subsection{Quan sát theo lớp}
+Từ \textit{history.json} của \textit{v1}, độ recall theo lớp cho thấy \textit{eye\_closure}, \textit{yawning} và \textit{phone\_use} có thể đạt mức rất cao, trong khi \textit{normal\_driving} là lớp dao động nhất. Điều này nhất quán với trực giác dữ liệu: ba lớp đầu mang dấu hiệu hình thái hoặc đối tượng khá rõ, còn \textit{normal\_driving} lại là một lớp nền rộng, dễ bị chồng lấn ngữ nghĩa với các hành vi mức nhẹ. Artifact \textit{v2} không lưu \textit{per-class recall} dưới dạng bảng hoàn chỉnh, nhưng dự đoán validation và confusion matrix đủ để xác nhận rằng mô hình cuối cùng vẫn nhận diện tốt ba lớp có tín hiệu nổi bật. Khó nhất vẫn là duy trì một biên quyết định ổn định giữa trạng thái lái bình thường và trạng thái nhìn lệch hướng.
+
+Điều đáng chú ý ở đây là cấu trúc khó của bài toán không phân bố đều giữa các lớp ``nguy hiểm'' và ``không nguy hiểm''. Thay vào đó, mô hình xử lý tốt các lớp có bằng chứng hình thái rõ ngay cả khi chúng là lớp rủi ro, còn vấp ở cặp lớp có biên ngữ nghĩa mờ dù một trong hai là trạng thái bình thường. Phát hiện này giúp báo cáo tránh được một diễn giải quá đơn giản kiểu ``mô hình đa phương thức chỉ giỏi bắt hành vi nổi bật''. Chính xác hơn, mô hình đang cho thấy rằng đa phương thức đặc biệt hữu ích khi có dấu hiệu cục bộ mạnh; còn với các lệch hướng tinh vi, bài toán quyết định theo thời gian vẫn là nút thắt khó nhất.
+
+\subsection{Artifact phân tích sau huấn luyện}
+Bundle \textit{v2} lưu hai loại artifact có giá trị phân tích cao: bảng \textit{pair predictions} và bảng \textit{full probabilities}. Bảng dự đoán cho phép xem trực tiếp mẫu nào bị nhầm và nhầm sang lớp nào; bảng xác suất đầy đủ lại cho phép nhìn sâu hơn vào cấu trúc quyết định của mô hình. Nhiều mẫu \textit{normal\_driving} trong \textit{v2} chỉ có xác suất lớp đúng quanh 0.44--0.56, trong khi xác suất \textit{yawning} hoặc \textit{looking\_away} vẫn ở mức 0.22--0.35. Đây là một quan sát quan trọng, vì nó cho thấy sai số chính không đến từ việc representation hoàn toàn thất bại, mà từ những vùng quyết định mờ nơi bằng chứng giữa nhiều lớp gần nhau vẫn chưa được tách đủ rõ. Nói cách khác, mô hình không ``mù'' với hành vi, mà đang thiếu độ sắc ở tầng hợp nhất-thời gian-quyết định.
+
+\subsection{Những gì có thể và chưa thể kết luận}
+Từ tập artifact hiện tại, báo cáo có thể kết luận khá chắc bốn điểm: (1) baseline đa phương thức thống nhất hoạt động tốt hơn rõ rệt so với nguyên mẫu; (2) checkpoint \textit{v2} là phiên bản mạnh nhất trong bundle được xác minh; (3) sai số không trải đều mà tập trung ở cặp \textit{normal\_driving}/\textit{looking\_away}; và (4) ba lớp \textit{phone\_use}, \textit{eye\_closure}, \textit{yawning} có tín hiệu ổn định hơn nhiều trong validation. Ngược lại, báo cáo chưa nên kết luận mạnh về đóng góp định lượng của từng modality, chưa nên tuyên bố tổng quát hóa ra ngoài điều kiện validation hiện có, và chưa nên đọc runtime ứng dụng như benchmark cuối cùng của mô hình. Chính việc tách bạch ranh giới này làm phần thực nghiệm đáng tin hơn.
+
+\begin{table}[t]
+\caption{Bằng chứng thực nghiệm và phạm vi kết luận}
+\label{tab:evidence-scope}
+\centering
+\scriptsize
+\begin{tabular}{L{1.7cm}L{2.45cm}L{1.95cm}}
+\toprule
+Nguồn & Quan sát chính & Kết luận rút ra \\
+\midrule
+\textit{history.json} của v1 & Diễn tiến epoch, macro-F1, recall từng lớp & Đọc xu hướng học và độ ổn định baseline \\
+Pair predictions của v2 & Mẫu nhầm và lớp bị nhầm sang & Xác định vùng lỗi chi phối \\
+Full probabilities của v2 & Phân bố xác suất trên đủ 5 lớp & Phân tích độ tin cậy và vùng quyết định mờ \\
+Confusion matrix val & Recall theo lớp và cặp nhầm chính & Chốt error pattern ở mức định tính \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:evidence-scope} làm rõ một nguyên tắc xuyên suốt của báo cáo: mỗi claim đều phải bám vào một loại bằng chứng cụ thể. Cách trình bày này giúp phần thực nghiệm thuyết phục hơn, vì người chấm nhìn được ngay ``mình có gì trong tay'' và ``mình dám kết luận đến đâu''.
+
+\section[Phan Tich Loi]{Phân Tích Lỗi}
+Mặc dù kết quả tổng thể khá tốt, hiệu năng không đồng đều trên mọi lớp. Ba lớp \textit{phone\_use}, \textit{eye\_closure} và \textit{yawning} có xu hướng ổn định hơn do mang tín hiệu hình thái rõ. Ngược lại, cặp \textit{normal\_driving} và \textit{looking\_away} tạo ra điểm nghẽn chính của bài toán. Ở \textit{v1}, artifact cho thấy mô hình có xu hướng đẩy một phần mẫu \textit{normal\_driving} sang \textit{looking\_away}; sang \textit{v2}, xu hướng này được giảm mạnh ở nhóm đó nhưng không biến mất hoàn toàn.
+
+\begin{figure}[t]
+\caption{Confusion matrix của phiên bản v2 trên tập validation. Lỗi chính tập trung ở cặp \textit{looking\_away}/\textit{normal\_driving}.}
+\label{fig:confusion-matrix}
+\centering
+\begin{tikzpicture}[x=0.62cm,y=0.62cm]
+\node[rotate=90] at (-1.65,2.0) {\scriptsize Nhãn thật};
+\node at (2.0,5.95) {\scriptsize Nhãn dự đoán};
+\node at (0.5,5.3) {\scriptsize N};
+\node at (1.5,5.3) {\scriptsize E};
+\node at (2.5,5.3) {\scriptsize Y};
+\node at (3.5,5.3) {\scriptsize L};
+\node at (4.5,5.3) {\scriptsize P};
+\node at (-0.45,4.5) {\scriptsize N};
+\node at (-0.45,3.5) {\scriptsize E};
+\node at (-0.45,2.5) {\scriptsize Y};
+\node at (-0.45,1.5) {\scriptsize L};
+\node at (-0.45,0.5) {\scriptsize P};
+\foreach \x/\y/\v in {
+0/0/176,1/0/0,2/0/2,3/0/3,4/0/0,
+0/1/0,1/1/23,2/1/0,3/1/0,4/1/0,
+0/2/0,1/2/0,2/2/8,3/2/0,4/2/0,
+0/3/67,1/3/0,2/3/0,3/3/16,4/3/0,
+0/4/0,1/4/0,2/4/0,3/4/0,4/4/75} {
+  \pgfmathsetmacro{\shade}{min(100,int(\v/176*100))}
+  \fill[blue!\shade] (\x,4-\y) rectangle ++(1,1);
+  \draw[black!35] (\x,4-\y) rectangle ++(1,1);
+  \node at (\x+0.5,4.5-\y) {\scriptsize \v};
+}
+\draw[red, very thick] (0,1) rectangle ++(1,1);
+\node[anchor=west, align=left] at (5.25,1.5) {\scriptsize L\,$\rightarrow$\,N là lỗi lớn nhất\\\scriptsize 67 / 83 mẫu \textit{looking\_away}};
+\end{tikzpicture}
+
+\vspace{0.2em}
+{\scriptsize Chú giải lớp: N = \textit{normal\_driving}, E = \textit{eye\_closure}, Y = \textit{yawning}, L = \textit{looking\_away}, P = \textit{phone\_use}.}
+\end{figure}
+
+Hình~\ref{fig:confusion-matrix} cho thấy lỗi chi phối của mô hình không nằm ở các lớp có tín hiệu hình thái rõ, mà tập trung gần như toàn bộ ở lớp \textit{looking\_away}. Cụ thể, 67 trên 83 mẫu \textit{looking\_away} bị dự đoán thành \textit{normal\_driving}, cho thấy đây mới là ranh giới quyết định khó nhất của baseline hiện tại.
+
+\begin{table}[t]
+\caption{Tóm tắt lỗi chính trên tập validation}
+\label{tab:error-summary}
+\centering
+\small
+\begin{tabular}{p{1.45cm}rrp{2.1cm}}
+\toprule
+Lớp & Support & Recall & Lỗi chi phối \\
+\midrule
+Normal & 181 & 0.972 & Một ít sang \textit{yawning} hoặc \textit{looking\_away} \\
+Eye closure & 23 & 1.000 & Không đáng kể trong artifact đã lưu \\
+Yawning & 8 & 1.000 & Không đáng kể trong artifact đã lưu \\
+Looking away & 83 & 0.193 & 67 mẫu bị đẩy sang \textit{normal\_driving} \\
+Phone use & 75 & 1.000 & Không đáng kể trong artifact đã lưu \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:error-summary} nén lại thông điệp của confusion matrix dưới dạng dễ chấm hơn: bài toán hiện không thất bại đồng đều, mà thất bại tập trung ở đúng một vùng ngữ nghĩa hẹp. Với hội đồng, đây là một dấu hiệu tốt hơn nhiều so với trường hợp mô hình yếu trên toàn bộ các lớp, vì nó cho thấy hướng cải thiện tiếp theo đã khá rõ.
+
+Mẫu nhầm lẫn này có thể giải thích trên ba mức. Ở mức dữ liệu, ranh giới giữa hai hành vi có thể mơ hồ khi góc quay, chất lượng khung hình hoặc thời lượng lệch nhìn không đủ lớn. Ở mức biểu diễn, tín hiệu cần cho cặp lớp này tinh vi hơn so với \textit{phone\_use} hay \textit{eye\_closure}; khác với điện thoại hoặc mắt nhắm, \textit{looking\_away} có thể chỉ biểu hiện qua thay đổi nhỏ của hướng đầu, ánh mắt hoặc tư thế thân trên trong một khoảng rất ngắn. Ở mức ra quyết định, clip ngắn 16 frame có thể chưa đủ để làm bằng chứng theo thời gian ổn định trong một số tình huống biên, đặc biệt khi phần lớn frame vẫn gần với trạng thái lái bình thường.
+
+Về mặt nghiên cứu, phát hiện này có hai ý nghĩa. Thứ nhất, nó chỉ ra rằng việc nâng tiếp hiệu năng nhiều khả năng không nằm ở việc tăng độ phức tạp mô hình một cách mù quáng, mà nằm ở cách mô hình hóa bằng chứng thời gian cho nhóm lớp gần nhau. Thứ hai, nó cung cấp hướng ưu tiên rõ ràng cho các thực nghiệm tiếp theo: \textit{temporal decision smoothing}, calibration, persistence rule, hoặc các loss/weighting nhấn mạnh cặp lớp \textit{normal\_driving}/\textit{looking\_away}. Tuy nhiên, đây vẫn là đề xuất rút ra từ pattern lỗi, không phải claim đã được chứng minh bằng thực nghiệm bổ sung trong bundle hiện có.
+
+Một giới hạn quan trọng cần nói rõ là bundle chưa cung cấp ablation hoàn chỉnh theo từng modality cho chính \textit{mmrt\_multimodal\_full\_v2\_t4x2}. Do đó, báo cáo không kết luận định lượng rằng bỏ \textit{audio} hay \textit{skeleton} sẽ làm giảm bao nhiêu \textit{macro-F1}; phần đánh giá ở đây chỉ dám khẳng định vai trò thiết kế của từng modality và các pattern lỗi quan sát được.
+
+\section[Tang Ung Dung Hoa MDDAD]{Minh Họa Ứng Dụng Hóa Bằng MDDAD}
+\textit{MDDAD} được đặt trong báo cáo như một tầng ứng dụng hóa, không phải đối tượng đánh giá học thuật trung tâm. Trục chính của nghiên cứu vẫn là baseline \textit{mmrt\_multimodal\_full\_v2\_t4x2}; do đó mọi kết luận về hiệu năng nhận diện 5 lớp phải bám vào artifact của baseline này, thay vì suy ra từ runtime của ứng dụng. Vai trò của \textit{MDDAD} là chứng minh rằng một lõi mô hình đã được xác minh có thể được tổ chức thành workflow phục vụ phân tích video, giám sát và báo cáo.
+
+Trong trạng thái hiện tại, hệ thống duy trì ba nhóm chức năng: phân tích video tải lên, giám sát webcam gần thời gian thực, và tổng hợp đánh giá rủi ro theo phiên. Route \texttt{POST /sessions/<id>/multimodal-analysis} cho thấy nhánh upload đã được tổ chức quanh suy luận theo clip và theo cửa sổ thời gian. Tuy nhiên, điều đó không đồng nghĩa ứng dụng đã triển khai đầy đủ baseline \textit{mmrt}; nó chỉ cho thấy định hướng thiết kế là bảo toàn ngữ cảnh thời gian khi chuyển từ nghiên cứu sang lớp ứng dụng.
+
+\begin{table}[t]
+\caption{Workload suy luận đã xác minh}
+\label{tab:runtime-config}
+\centering
+\scriptsize
+\begin{tabular}{L{1.55cm}L{0.75cm}L{3.45cm}}
+\toprule
+Tham số & Giá trị & Ý nghĩa triển khai \\
+\midrule
+Clip window & 4.0s & Mỗi quyết định dựa trên một cửa sổ dài 4 giây. \\
+Clip stride & 2.0s & Tạo xấp xỉ 30 quyết định clip trong một phút video. \\
+Frames/clip & 16 & Tương đương khoảng 4 frame mẫu mỗi giây cho nhánh hành vi. \\
+Realtime FPS & 12.0 & Vòng lặp webcam ưu tiên độ ổn định hiển thị. \\
+Preview FPS & 3.0 & Luồng preview giảm tải so với camera đầy đủ. \\
+Upload FPS & 5.0 & Nhánh upload lấy mẫu thưa hơn để giữ chi phí xử lý hợp lý. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:runtime-config} báo cáo \textit{workload suy luận đã xác minh} thay vì tuyên bố một benchmark latency mà bundle hiện không cung cấp. Nói cách khác, đây là các đại lượng chi phí triển khai có thể kiểm chứng trực tiếp từ cấu hình và pipeline, còn thời gian suy luận tính bằng mili giây hay FPS chuẩn benchmark vẫn cần một thí nghiệm riêng với phần cứng, batch size và chế độ chạy được khóa chặt.
+
+Điểm cần phân biệt dứt khoát là nhánh giám sát hành vi thời gian thực trong \textit{MDDAD} hiện vẫn chủ yếu dựa trên MediaPipe, EAR/MAR, head-pose heuristic và các temporal rule; tài liệu hệ thống cũng ghi rõ \textit{Built-in MediaPipe/OpenCV rules} và \textit{Chưa có model action recognition train riêng}. Nhánh học sâu rõ nhất trong app hiện hành là phát hiện điện thoại bằng detector, trong đó RT-DETR-L serious fine-tuned là model chính, bên cạnh các phương án RT-DETR compare và YOLO26n fallback. Do đó, \textit{MDDAD} không được dùng để chứng minh chất lượng của bài toán phân loại đa phương thức 5 lớp; nó chỉ minh họa lộ trình ứng dụng hóa sau nghiên cứu.
+
+\subsection{Phạm vi liên hệ với baseline nghiên cứu}
+Điểm giao nhau quan trọng nhất giữa \textit{MDDAD} và baseline \textit{mmrt} nằm ở tư duy suy luận theo clip và theo thời gian, chứ không nằm ở việc hai bên đã dùng chung toàn bộ kiến trúc nội bộ. Baseline nghiên cứu giải quyết trực tiếp bài toán 5 lớp trên dữ liệu đa phương thức đồng bộ. Ngược lại, app hiện hành ưu tiên demo ổn định nên dùng pipeline lai ghép, trong đó phần hành vi vẫn thiên về tín hiệu landmark và temporal rule, còn detector điện thoại là một nhánh bổ sung. Việc tách hai tầng theo đúng bản chất này giúp báo cáo không lẫn giữa đóng góp học thuật và đóng góp triển khai.
+
+\subsection{Đối chiếu baseline nghiên cứu và runtime ứng dụng}
+Một điểm dễ gây hiểu nhầm là sự khác nhau giữa baseline nghiên cứu \textit{mmrt\_multimodal\_full\_v2\_t4x2} và runtime hiện hành của \textit{MDDAD}. Để tránh nhập nhằng, Bảng~\ref{tab:research-vs-app} đối chiếu hai tầng này theo nguồn dữ liệu, đầu vào, cơ chế quyết định và loại bằng chứng đánh giá.
+
+\begin{table}[t]
+\caption{Baseline nghiên cứu và runtime MDDAD hiện hành}
+\label{tab:research-vs-app}
+\centering
+\small
+\begin{tabular}{L{1.8cm}L{2.6cm}L{2.6cm}}
+\toprule
+Tiêu chí & Baseline nghiên cứu & Runtime app hiện hành \\
+\midrule
+Nguồn chính & DBR-DMD-v1.1 5 lớp & Webcam/upload cục bộ \\
+Đầu vào & body, face, audio, skeleton & frame video, landmark, detector điện thoại \\
+Đơn vị suy luận & clip 16 frame đồng bộ & frame + luật thời gian theo cửa sổ \\
+Quyết định & gated fusion + BiGRU attention & heuristic + detector + risk engine \\
+Kết quả xác minh & val macro-F1 = 0.8066 & workflow chạy được, có score và report \\
+Điểm mạnh & chuẩn nghiên cứu, có artifact xác suất & ổn định demo, có dashboard và history \\
+Giới hạn & thiếu test metric đóng gói & chưa là unified multimodal runtime \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:research-vs-app} khóa lại ranh giới diễn giải của báo cáo. Cột trái là phần có giá trị nghiên cứu và được hỗ trợ bởi artifact thực nghiệm; cột phải là tầng ứng dụng hóa và không được dùng để suy diễn ngược về chất lượng của baseline. Cách đặt này cho phép hệ thống xuất hiện đúng vai trò: minh họa khả năng chuyển giao, chứ không lấn át đóng góp học thuật của mô hình.
+
+\subsection{Luồng vận hành của application layer}
+Theo tài liệu kiến trúc, cả workflow upload và workflow realtime đều đi qua cùng một vòng đời mức cao: nhận đầu vào, mở session, sinh tín hiệu theo thời gian, tổng hợp event, cập nhật score và lưu kết quả để hiển thị lại trên dashboard hoặc report. Mô tả này đủ để cho thấy \textit{MDDAD} có cấu trúc ứng dụng rõ ràng, nhưng không đẩy báo cáo sang hướng phân tích chi tiết một pipeline khác với baseline nghiên cứu. Vì mục tiêu chính của đề tài là mô hình đa phương thức, phần app chỉ nên dừng ở mức chứng minh tính khả dụng của hướng chuyển giao.
+
+\section[Kiem Thu He Thong Va Tieu Chi Chap Nhan]{Kiểm Thử Hệ Thống Và Tiêu Chí Chấp Nhận}
+Mục này chỉ áp dụng cho tầng ứng dụng \textit{MDDAD}, không phải phần đánh giá trung tâm của baseline \textit{mmrt\_multimodal\_full\_v2\_t4x2}. Hiệu năng của mô hình nghiên cứu đã được trình bày ở các mục thực nghiệm trước, với bằng chứng cốt lõi là \textit{validation macro-F1 = 0.8066}, confusion matrix validation và phân tích artifact dự đoán. Vì vậy, Section IX chỉ trả lời câu hỏi ở mức triển khai: lớp ứng dụng có vận hành trọn workflow và sinh được đầu ra phục vụ demo hay không.
+
+Theo tài liệu \textit{evaluation plan}, phần nghiệm thu hệ thống nên tập trung vào bốn nhóm kiểm tra: workflow chức năng đầu-cuối, khả năng giải thích của timeline và report, các chỉ số vận hành đơn giản như score hay event count, và các failure case có kiểm soát. Đây là tiêu chí chấp nhận của sản phẩm demo, không phải benchmark học thuật của mô hình \textit{mmrt}. Vì thế, các thành phần như detector fallback, CSV export hay camera error chỉ được dùng để đánh giá độ hoàn chỉnh của lớp ứng dụng, không được dùng để suy diễn ngược về chất lượng của baseline nghiên cứu.
+
+\subsection{Protocol đánh giá theo kiểu đồ án tốt nghiệp}
+Từ requirement specification và evaluation plan, protocol đánh giá phù hợp cho đồ án này nên chia thành bốn lớp: đánh giá chức năng đầu-cuối, đánh giá định tính về khả năng giải thích, đánh giá định lượng đơn giản trên phiên chạy thật, và đánh giá failure case có kiểm soát. Cách chia này phù hợp cho phần \textit{ứng dụng hóa}, miễn là được đặt tách biệt khỏi phần thực nghiệm của baseline nghiên cứu.
+
+Lớp thứ nhất là \textit{functional end-to-end evaluation}. Theo evaluation plan, cần kiểm tra trọn vẹn các workflow của app như login/logout, tạo driver, uploaded video creation, MediaPipe analysis, phone-detector workflow, realtime monitoring, snapshot preview, dashboard, history, reports, evaluation page và CSV export. Với mỗi workflow, cách ghi nhận nên theo mẫu \textit{Expected Result / Actual Result / Pass-Fail / Notes}. Đây là kiểu nghiệm thu phù hợp cho bảo vệ tốt nghiệp của \textit{MDDAD}, nhưng nó không thay thế cho đánh giá nhận diện 5 lớp của baseline nghiên cứu.
+
+Lớp thứ hai là \textit{qualitative explainability evaluation}. Vì project tự định vị là local-first và explainable, đánh giá không thể bỏ qua câu hỏi liệu người xem có hiểu được timeline, evidence snapshot, risk explanation và report hay không. Các câu hỏi trong evaluation plan như ``event label có dễ hiểu không'', ``timeline có khớp hành vi nhìn thấy không'', hay ``reviewer có theo dõi được cách risk biến thành safety score và report không'' là các tiêu chí rất sát tinh thần đồ án. Chúng đặc biệt quan trọng với \textit{MDDAD}, bởi một hệ thống minh bạch nhưng khó diễn giải trên giao diện thì vẫn chưa hoàn thành mục tiêu ứng dụng hóa.
+
+Lớp thứ ba là \textit{simple quantitative evaluation}. Trong phạm vi này, các chỉ số thực tế nên được trích từ evaluation page và CSV export, bao gồm total sessions, safety score, risk score, alert level, event count, event count by type, processed frame count, face detected frame count, face detection rate, approximate processing FPS và phone usage count. Chúng chỉ mang ý nghĩa vận hành của app. Chẳng hạn, face detection rate được dùng để giải thích false negative của MediaPipe, còn event count by type được dùng để kiểm tra video chuẩn có tạo ra loại event kỳ vọng hay không.
+
+\begin{table}[t]
+\caption{Protocol nghiệm thu lớp ứng dụng}
+\label{tab:evaluation-protocol}
+\centering
+\scriptsize
+\begin{tabular}{L{1.45cm}L{2.65cm}L{2.15cm}}
+\toprule
+Nhóm & Trọng tâm kiểm tra & Bằng chứng \\
+\midrule
+Chức năng & đăng nhập, driver, upload, realtime, báo cáo, export & checklist đạt/không đạt \\
+Định tính & timeline, giải thích, evidence, độ rõ báo cáo & ghi chú của người đánh giá \\
+Định lượng & score, số event, face rate, FPS, phone count & trang evaluation và CSV \\
+Chịu lỗi & lỗi camera, file sai, thiếu detector, không thấy mặt & hành vi fallback \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Lớp thứ tư là \textit{controlled failure-case evaluation}. Theo requirement và evaluation plan, các ca lỗi tối thiểu cần được ghi nhận gồm camera unavailable, missing detector model, missing uploaded video file, no face detected, poor lighting và invalid upload file. Giá trị của lớp đánh giá này nằm ở chỗ nó chứng minh application layer không chỉ chạy khi mọi điều kiện thuận lợi, mà còn xuống cấp một cách có kiểm soát.
+
+\subsection{Tiêu chí chấp nhận cuối kỳ}
+Dựa trên các yêu cầu chức năng và phi chức năng, có thể chốt bộ tiêu chí chấp nhận cuối kỳ của application layer ở ba mức. Ở mức \textit{bắt buộc}, hệ thống phải chạy local, đăng nhập được, hỗ trợ nhiều driver, phân tích được webcam hoặc video upload, sinh được event, score, history và report, đồng thời không phụ thuộc dịch vụ trả phí. Ở mức \textit{nên có}, hệ thống nên hiển thị live update, fatigue trend forecast và filtering hợp lý. Ở mức \textit{mở rộng}, evidence snapshot, report export, calibration và optional detector backend sẽ làm tăng chất lượng bảo vệ nhưng không phải điều kiện để đánh giá baseline \textit{mmrt}.
+
+Nếu đặt theo góc nhìn hội đồng chấm đồ án, một phiên bản được xem là đạt khi thỏa hai tầng bằng chứng tách biệt. Thứ nhất, baseline nghiên cứu phải có bằng chứng thực nghiệm trung thực trên dataset chuẩn. Thứ hai, application layer phải chạy ổn định ở mức demo và cho phép người xem theo dõi được luồng phân tích đầu-cuối. Cách định nghĩa này giúp báo cáo giữ đúng trọng tâm mô hình mà vẫn có phần triển khai đủ thuyết phục.
+
+\section[Threats To Validity]{Threats to Validity}
+Có bốn nhóm đe dọa tới độ vững của kết luận hiện tại. Thứ nhất là \textit{construct validity}: nhãn \textit{looking\_away} có thể chồng lấn ngữ nghĩa với \textit{normal\_driving} nếu độ lệch đầu hoặc ánh mắt chỉ xảy ra ngắn và nhẹ, làm cho confusion pattern phản ánh không chỉ lỗi mô hình mà còn cả biên định nghĩa lớp. Thứ hai là \textit{internal validity}: bundle \textit{v2} không đóng gói đầy đủ log huấn luyện và ablation từng modality, nên một phần diễn giải về vai trò của \textit{audio} hay \textit{skeleton} mới dừng ở mức hợp lý kỹ thuật chứ chưa phải bằng chứng nhân quả.
+
+Thứ ba là \textit{external validity}: metric trung tâm hiện nằm trên validation của \textit{DBR-DMD-v1.1 CLEAN\_FULLMM\_5CLASS}, nên chưa thể suy rộng mạnh sang các điều kiện cabin khác như góc đặt camera mới, người lái mới, ánh sáng kém, hoặc miền dữ liệu ngoài tập đang có. Thứ tư là \textit{deployment validity}: tầng \textit{MDDAD} hiện minh họa hướng chuyển giao nhưng chưa phải một runtime thống nhất trùng hoàn toàn với baseline \textit{mmrt}; vì vậy kết quả vận hành của app không nên bị đọc nhầm như benchmark cuối cùng của mô hình nghiên cứu. Việc nêu rõ bốn threat này giúp báo cáo mạnh hơn về mặt học thuật vì nó khóa được phạm vi claim thay vì để hội đồng tự suy đoán giới hạn.
+
+\section[Han Che Va Huong Phat Trien]{Hạn Chế Và Hướng Phát Triển}
+Báo cáo hiện còn bốn giới hạn chính. Thứ nhất, chưa xác minh được \textit{test macro-F1} cho checkpoint tốt nhất \textit{mmrt\_multimodal\_full\_v2\_t4x2}; mọi kết luận định lượng trung tâm vì thế được giữ trên validation. Thứ hai, bundle chưa có ablation từng modality cho chính \textit{v2}, nên chưa thể kết luận định lượng vai trò biên của \textit{audio} hay \textit{skeleton}. Thứ ba, chưa có benchmark chính quy về latency, throughput và realtime stability cho baseline thống nhất. Thứ tư, phần tái lập đầy đủ theo chuẩn công bố còn thiếu một số siêu tham số cuối cùng và log huấn luyện chi tiết. Nói cách khác, báo cáo hiện mạnh hơn ở chiều \textit{analysis of available evidence} so với chiều \textit{complete experimental coverage}.
+
+Từ các giới hạn đó, bốn hướng phát triển tự nhiên nhất gồm: (1) đóng gói lại toàn bộ train artifact của \textit{full\_v2}, bao gồm config, log và test summary; (2) thực hiện ablation theo modality và theo nhóm branch hình ảnh/phi hình ảnh; (3) thử nghiệm các chiến lược hậu xử lý quyết định như smoothing, calibration và persistence rule cho cặp \textit{normal\_driving}/\textit{looking\_away}; (4) tích hợp dần baseline nghiên cứu vào nhánh upload trước, sau đó mới mở rộng sang realtime khi đã có benchmark tài nguyên rõ ràng. Hướng này phù hợp với trạng thái hiện tại của project hơn so với việc tuyên bố hợp nhất realtime hoàn chỉnh quá sớm.
+
+\balance
+\section[Ket Luan]{Kết Luận}
+Báo cáo tập trung vào baseline nghiên cứu \textit{mmrt\_multimodal\_full\_v2\_t4x2} cho bài toán giám sát an toàn tài xế trong cabin. Mô hình đa phương thức thống nhất này khai thác đồng thời \textit{body}, \textit{face}, \textit{audio} và \textit{skeleton}, đạt kết quả tốt nhất \textit{macro-F1 = 0.8066} trên tập validation của bộ dữ liệu \textit{DBR-DMD-v1.1 CLEAN\_FULLMM\_5CLASS}. 
+
+Đóng góp cốt lõi của báo cáo không chỉ nằm ở con số \textit{0.8066}, mà nằm ở việc đặt được một baseline đa phương thức thống nhất cùng biên bằng chứng rõ ràng: biết mô hình làm tốt ở đâu, yếu ở đâu, và phần nào đã được xác minh trực tiếp từ artifact. Insight quan trọng nhất là độ khó không phân bố đồng đều trên mọi lớp. Các hành vi có dấu hiệu rõ như \textit{phone\_use}, \textit{eye\_closure} và \textit{yawning} được nhận diện tốt hơn, trong khi \textit{normal\_driving} và \textit{looking\_away} vẫn là biên quyết định khó nhất. Vì vậy, giá trị chính của \textit{mmrt\_multimodal\_full\_v2\_t4x2} nằm ở việc xác lập được một lõi nghiên cứu đủ mạnh để phân tích lỗi, đủ trung thực để không overclaim, và đủ rõ ràng để làm nền cho các thực nghiệm sâu hơn về sau. \textit{MDDAD} chỉ được giữ ở vai trò minh họa chuyển giao, nhờ đó báo cáo tránh lệch hướng khỏi mô hình đang nghiên cứu.
+
+\begin{thebibliography}{10}
+\small
+
+\bibitem{mobilenetv3}
+A. Howard, M. Sandler, G. Chu, et al.,
+``Searching for MobileNetV3,''
+\textit{Proceedings of ICCV}, 2019.
+
+\bibitem{gru}
+K. Cho, B. van Merrienboer, D. Bahdanau, and Y. Bengio,
+``On the Properties of Neural Machine Translation: Encoder-Decoder Approaches,''
+\textit{arXiv preprint arXiv:1409.1259}, 2014.
+
+\bibitem{mediapipe}
+C. Lugaresi, J. Tang, H. Nash, et al.,
+``MediaPipe: A Framework for Building Perception Pipelines,''
+\textit{arXiv preprint arXiv:1906.08172}, 2019.
+
+\bibitem{dms}
+S. Singh and N. Papanikolopoulos,
+``Monitoring Driver Fatigue Using Facial Analysis Techniques,''
+\textit{IEEE Intelligent Transportation Systems}, 1999.
+
+\bibitem{slowfast}
+C. Feichtenhofer, H. Fan, J. Malik, and K. He,
+``SlowFast Networks for Video Recognition,''
+\textit{Proceedings of ICCV}, 2019.
+
+\bibitem{timesformer}
+G. Bertasius, H. Wang, and L. Torresani,
+``Is Space-Time Attention All You Need for Video Understanding?'',
+\textit{Proceedings of ICML}, 2021.
+
+\bibitem{videoswin}
+Z. Liu, J. Ning, Y. Cao, et al.,
+``Video Swin Transformer,''
+\textit{Proceedings of CVPR}, 2022.
+
+\bibitem{driveact}
+M. Martin, A. Roitberg, M. Haurilet, and R. Stiefelhagen,
+``Drive\&Act: A Multi-Modal Dataset for Fine-Grained Driver Behavior Recognition in Autonomous Vehicles,''
+\textit{Proceedings of ICCV Workshops}, 2019.
+
+\end{thebibliography}
+
+\end{document}

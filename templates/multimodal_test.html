@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('session.multimodal_model', 'Multimodal Model') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>{{ _('session.multimodal_model', 'Multimodal Model') }}</h2>
+    <p class="muted">{{ _('realtime.model_hint', 'The page keeps the live stream controls, snapshots, and event log in one place.') }}</p>
+  </div>
+  <a class="button secondary" href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Multimodal Video') }}</a>
+</section>
+
+<section class="two-column">
+  <article class="panel">
+    <h2>{{ _('common.open', 'Open') }} {{ _('session.multimodal_model', 'Multimodal Model') }}</h2>
+    <form method="post" enctype="multipart/form-data" class="form-stack">
+      <label>
+        {{ _('upload.video_file', 'Video file') }}
+        <input type="file" name="video" accept=".mp4,.avi,.mov,.mkv,video/mp4,video/x-msvideo,video/quicktime,video/x-matroska" required>
+      </label>
+      <button type="submit" class="button primary">{{ _('common.start', 'Start') }}</button>
+    </form>
+    <div class="detail-list" style="margin-top: 18px;">
+      <div><dt>{{ _('session.model_path', 'Model path') }}</dt><dd class="path">{{ model_path }}</dd></div>
+      <div><dt>{{ _('session.analysis_mode', 'Analysis mode') }}</dt><dd>{{ _('value.full_ai', 'Full AI') }}</dd></div>
+    </div>
+  </article>
+
+  <article class="panel">
+    <h2>{{ _('session.summary', 'Summary') }}</h2>
+    {% if result %}
+      <div class="status-grid compact-states" style="margin-top: 0;">
+        <div><dt>{{ _('upload.video_file', 'Video file') }}</dt><dd>{{ result["original_filename"] }}</dd></div>
+        <div><dt>{{ _('session.audio_input', 'Audio') }}</dt><dd>{{ _('session.detected', 'Detected') if result["top_prediction"]["audio_track_detected"] else _('session.not_detected', 'Not detected') }}</dd></div>
+        <div><dt>{{ _('session.skeleton_input', 'Skeleton') }}</dt><dd>{{ result["top_prediction"]["pose_frame_count"] }} {{ _('session.sampled_frames', 'sampled frames') }}</dd></div>
+        <div><dt>{{ _('session.clip_count', 'Clip count') }}</dt><dd>{{ result["predictions"]|length }}</dd></div>
+      </div>
+      <div class="detail-list" style="margin-top: 16px;">
+        <div><dt>{{ _('session.frame_count', 'Frame count') }}</dt><dd>{{ result["metadata"].frame_count }}</dd></div>
+        <div><dt>{{ _('common.duration', 'Duration') }}</dt><dd>{{ "%.1f seconds"|format(result["metadata"].duration_seconds) }}</dd></div>
+        <div><dt>{{ _('session.model_backend', 'Backend') }}</dt><dd>{{ result["top_prediction"]["geom2_label"] }} / {{ result["top_prediction"]["label"] }}</dd></div>
+        <div><dt>{{ _('common.confidence', 'Confidence') }}</dt><dd>{{ "%.2f"|format(result["top_prediction"]["confidence"]) }}</dd></div>
+      </div>
+    {% else %}
+      <p class="muted">{{ _('session.no_report', 'No report is available yet. Run multimodal analysis to generate one.') }}</p>
+    {% endif %}
+  </article>
+</section>
+
+{% if result %}
+<section class="panel">
+  <div class="section-header">
+    <h2>{{ _('session.event_timeline', 'Event Timeline') }}</h2>
+    <span class="badge badge-info">{{ result["top_prediction"]["label"] }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>{{ _('common.start', 'Start') }}</th>
+          <th>{{ _('common.end', 'End') }}</th>
+          <th>{{ _('common.type', 'Type') }}</th>
+          <th>{{ _('common.confidence', 'Confidence') }}</th>
+          <th>{{ _('session.skeleton_frames', 'Skeleton frames') }}</th>
+          <th>{{ _('session.audio_track', 'Audio track') }}</th>
+          <th>{{ _('common.top_3', 'Top 3') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in result["predictions"] %}
+        <tr>
+          <td>{{ "%.1f"|format(item["start_seconds"]) }}</td>
+          <td>{{ "%.1f"|format(item["end_seconds"]) }}</td>
+          <td>{{ tr(item["label"]) }}</td>
+          <td>{{ "%.2f"|format(item["confidence"]) }}</td>
+          <td>{{ item["pose_frame_count"] }}</td>
+          <td>{{ _('common.yes', 'Yes') if item["audio_track_detected"] else _('common.no', 'No') }}</td>
+          <td>
+            {% for top in item["top3"] %}
+              <div>{{ tr(top["class_name"]) }}: {{ "%.2f"|format(top["confidence"]) }}</div>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

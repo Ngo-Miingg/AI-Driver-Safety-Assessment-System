@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <div>
+          <p class="eyebrow">{{ _('app.eyebrow', 'AI Driver Safety Assessment') }}</p>
+          <h1>{{ _('app.title', 'AI Driver Safety Assessment System') }}</h1>
+        </div>
+        <div class="header-actions">
+          <div class="language-switcher" aria-label="{{ _('language.label', 'Language') }}">
+            {% for code, label in supported_languages.items() %}
+              <a class="{{ 'active' if current_language == code else '' }}" href="{{ url_for('set_language', language=code) }}">{{ label }}</a>
+            {% endfor %}
+          </div>
+          {% if current_user %}
+            <span class="status-pill">{{ current_user["username"] }}</span>
+          {% else %}
+            <span class="status-pill">{{ _('app.local_demo', 'Local Demo') }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% if current_user %}
+      <nav class="shell main-nav" aria-label="Primary navigation">
+        <a href="{{ url_for('dashboard') }}">{{ _('nav.dashboard', 'Dashboard') }}</a>
+        <a href="{{ url_for('drivers') }}">{{ _('nav.drivers', 'Drivers') }}</a>
+        <a href="{{ url_for('realtime') }}">{{ _('nav.realtime', 'Realtime') }}</a>
+        <a href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Multimodal Video') }}</a>
+        <a href="{{ url_for('history') }}">{{ _('nav.history', 'History') }}</a>
+        <a href="{{ url_for('reports') }}">{{ _('nav.reports', 'Reports') }}</a>
+        <a href="{{ url_for('evaluation_page') }}">{{ _('nav.evaluation', 'Evaluation') }}</a>
+        <a href="{{ url_for('logout') }}">{{ _('nav.logout', 'Logout') }}</a>
+      </nav>
+      {% endif %}
+    </header>
+
+    <main class="shell page-content {% block page_shell_class %}{% endblock %}">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <script>
+      window.APP_LANGUAGE = "{{ current_language }}";
+      window.I18N = {{ ui_text|tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

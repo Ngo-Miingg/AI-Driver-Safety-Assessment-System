@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('evaluation.title', 'Evaluation') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>{{ _('evaluation.title', 'Evaluation') }}</h2>
+    <p class="muted">{{ _('evaluation.helper', 'Session-level metrics for calibration, comparison, and defense discussion.') }}</p>
+  </div>
+  <div class="button-row">
+    <a class="button primary" href="{{ url_for('evaluation_csv') }}">{{ _('evaluation.export_csv', 'Export CSV') }}</a>
+  </div>
+</section>
+
+<section class="panel">
+  {% if rows %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ _('common.session', 'Session') }}</th>
+            <th>{{ _('common.driver', 'Driver') }}</th>
+            <th>{{ _('common.type', 'Type') }}</th>
+            <th>{{ _('common.duration', 'Duration') }}</th>
+            <th>{{ _('common.safety', 'Safety') }}</th>
+            <th>{{ _('common.risk', 'Risk') }}</th>
+            <th>{{ _('common.alert', 'Alert') }}</th>
+            <th>{{ _('evaluation.events_by_type', 'Events By Type') }}</th>
+            <th>{{ _('evaluation.processing_fps', 'Processing FPS') }}</th>
+            <th>{{ _('evaluation.frames', 'Frames') }}</th>
+            <th>{{ _('evaluation.face_rate', 'Face Rate') }}</th>
+            <th>{{ _('evaluation.phone', 'Phone') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            {% set summary = summaries[row["session_id"]] %}
+          <tr>
+            <td><a href="{{ url_for('session_detail', session_id=row['session_id']) }}">#{{ row["session_id"] }}</a></td>
+            <td>{{ row["driver_name"] }}</td>
+            <td><span class="badge badge-neutral">{{ tr(row["session_type"]) }}</span></td>
+            <td>{{ "%.1fs"|format(row["duration"]) if row["duration"] is not none else "--" }}</td>
+            <td>{{ "%.0f"|format(row["safety_score"]) if row["safety_score"] is not none else "--" }}</td>
+            <td>{{ "%.0f"|format(row["risk_score"]) if row["risk_score"] is not none else "--" }}</td>
+            <td><span class="badge {{ 'badge-danger' if row['alert_level'] == 'Danger' else ('badge-warning' if row['alert_level'] in ['Warning', 'Caution'] else 'badge-success') }}">{{ tr(row["alert_level"], "--") }}</span></td>
+            <td>
+              <span class="small-metrics">
+                {{ tr('eye_closure') }} {{ row["eye_closure_count"] or 0 }},
+                {{ tr('yawn') }} {{ row["yawn_count"] or 0 }},
+                {{ tr('phone_usage') }} {{ row["phone_usage_count"] or 0 }},
+                {{ tr('phone_call') }} {{ row["phone_call_count"] or 0 }},
+                {{ tr('talking_to_passenger') }} {{ row["talking_to_passenger_count"] or 0 }},
+                {{ tr('looking_away') }} {{ row["looking_away_count"] or 0 }},
+                {{ tr('head_down') }} {{ row["head_down_count"] or 0 }},
+                {{ tr('mixed_risk') }} {{ row["mixed_risk_count"] or 0 }},
+                {{ tr('face_missing') }} {{ row["face_missing_count"] or 0 }}
+              </span>
+            </td>
+            <td>{{ "%.2f"|format(summary["approximate_processing_fps"]) if summary["approximate_processing_fps"] is not none else "--" }}</td>
+            <td>{{ row["processed_frame_count"] or 0 }}</td>
+            <td>{{ "%.0f%%"|format(summary["face_detection_rate"] * 100) if summary["face_detection_rate"] is not none else "--" }}</td>
+            <td>{{ row["phone_usage_event_count"] or row["phone_usage_count"] or 0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <h2>{{ _('evaluation.no_rows_title', 'No evaluation rows yet') }}</h2>
+      <p class="muted">{{ _('evaluation.no_rows', 'Run multimodal analysis on an uploaded video to populate evaluation metrics.') }}</p>
+      <div class="button-row">
+        <a class="button primary" href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Multimodal Video') }}</a>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

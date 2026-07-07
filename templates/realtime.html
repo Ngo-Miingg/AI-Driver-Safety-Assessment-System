@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('realtime.title', 'Realtime Stream') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+{% block page_shell_class %}page-content-wide page-content-realtime{% endblock %}
+
+{% block content %}
+<section class="realtime-shell realtime-shell-classic">
+  {% if active_driver %}
+  <input id="behavior-model-select" type="hidden" value="{{ selected_behavior_backend }}">
+
+  <div class="page-heading">
+    <div>
+      <p class="realtime-kicker">{{ _('app.eyebrow', 'AI Driver Safety Assessment') }}</p>
+      <h2>{{ _('realtime.title', 'Realtime Stream') }}</h2>
+      <p class="muted">
+        {{ _('dashboard.active_driver', 'Active Driver') }}:
+        <strong>{{ active_driver["display_name"] }}</strong>.
+        {{ _('realtime.helper', 'Live multimodal monitoring with video, audio, skeleton landmarks, temporal event confirmation, and session saving.') }}
+      </p>
+    </div>
+    <div class="button-row">
+      <a class="button secondary" href="{{ url_for('drivers') }}">{{ _('nav.drivers', 'Drivers') }}</a>
+      <a class="button secondary" href="{{ url_for('history') }}">{{ _('nav.history', 'History') }}</a>
+    </div>
+  </div>
+
+  <section class="panel compact">
+    <div class="section-header">
+      <h3>{{ _('realtime.model_selection', 'Model selection') }}</h3>
+    </div>
+    <input id="phone-detector-select" type="hidden" value="disabled">
+    <div class="metric-grid" style="grid-template-columns: minmax(0, 1fr);">
+      <label>
+        <span class="muted">{{ _('realtime.behavior_model', 'Behavior model') }}</span>
+        <input type="text" value="MMRT multimodal full v2 t4x2" readonly>
+      </label>
+    </div>
+    <p class="muted">
+      {{ _('realtime.mmrt_phone_note', 'Phone usage is recognized inside the MMRT multimodal behavior model. The standalone YOLO/RT-DETR phone detector is disabled in realtime.') }}
+    </p>
+  </section>
+
+  <section class="panel compact">
+    <div class="realtime-command">
+      <div>
+        <p class="realtime-label">{{ _('realtime.session_status', 'Session Status') }}</p>
+        <h3 id="realtime-status">{{ _('realtime.idle', 'Idle') }}</h3>
+        <p class="muted" id="realtime-status-helper">{{ _('js.waiting_update', 'Waiting for the first realtime update.') }}</p>
+      </div>
+      <div class="button-row">
+        <span id="realtime-connection" class="badge badge-warning">{{ _('js.disconnected', 'Disconnected') }}</span>
+        <a id="realtime-session-link" class="button secondary hidden" href="#">{{ _('realtime.open_session', 'Open Session') }}</a>
+        <button id="start-realtime" class="button primary" type="button">{{ _('realtime.start', 'Start Monitoring') }}</button>
+        <button id="stop-realtime" class="button secondary" type="button" disabled>{{ _('realtime.stop', 'Stop Monitoring') }}</button>
+        <a class="button secondary" href="{{ url_for('debug_camera') }}">{{ _('realtime.debug_camera', 'Debug Camera') }}</a>
+      </div>
+    </div>
+    <p id="realtime-error" class="flash error hidden realtime-inline-error"></p>
+  </section>
+
+  <section class="metric-grid realtime-metrics">
+    <article class="metric-card">
+      <span>{{ _('realtime.frames', 'Frames') }}</span>
+      <strong id="metric-frame-count">--</strong>
+    </article>
+    <article class="metric-card">
+      <span>{{ _('realtime.risk', 'Risk Score') }}</span>
+      <strong id="metric-risk-score">--</strong>
+    </article>
+    <article class="metric-card">
+      <span>{{ _('realtime.safety', 'Safety Score') }}</span>
+      <strong id="metric-safety-score">--</strong>
+    </article>
+    <article class="metric-card">
+      <span>{{ _('realtime.alert', 'Alert Level') }}</span>
+      <strong id="metric-alert-level">--</strong>
+    </article>
+    <article class="metric-card">
+      <span>{{ _('realtime.live_session', 'Live Session') }}</span>
+      <strong id="metric-live-session">--</strong>
+    </article>
+  </section>
+
+  <section class="panel compact">
+    <div class="section-header">
+      <div>
+        <h3>{{ _('realtime.indicators', 'Behavior Indicators') }}</h3>
+      </div>
+      <span class="badge badge-info" id="metric-analysis-mode">{{ _('common.none', '--') }}</span>
+    </div>
+    <div class="indicator-grid realtime-status-indicator-grid">
+      <div id="indicator-face-detected" class="indicator">
+        <span>{{ _('realtime.face_detected', 'Face detected') }}</span>
+        <strong id="metric-face-detected-status">--</strong>
+      </div>
+      <div id="indicator-eye-closed" class="indicator">
+        <span>{{ _('realtime.eye_closed', 'Eye closed') }}</span>
+        <strong id="metric-eye-closed-status">--</strong>
+      </div>
+      <div id="indicator-yawn" class="indicator">
+        <span>{{ _('realtime.yawn_candidate', 'Yawn candidate') }}</span>
+        <strong id="metric-yawn-status">--</strong>
+      </div>
+      <div id="indicator-looking-away" class="indicator">
+        <span>{{ _('realtime.looking_away', 'Looking away') }}</span>
+        <strong id="metric-looking-away-status">--</strong>
+      </div>
+      <div id="indicator-head-down" class="indicator">
+        <span>{{ _('realtime.head_down', 'Head down') }}</span>
+        <strong id="metric-head-down-status">--</strong>
+      </div>
+      <div id="indicator-phone-detected" class="indicator">
+        <span>{{ _('realtime.phone_use_state', 'Phone use') }}</span>
+        <strong id="metric-phone-detected-status">--</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="realtime-layout">
+    <article class="panel realtime-stage-panel">
+      <div class="realtime-stage-frame">
+        <img class="realtime-stream" src="{{ url_for('realtime_feed') }}" alt="{{ _('realtime.live_preview_alt', 'Live webcam stream') }}">
+      </div>
+
+      <div class="two-column realtime-stage-secondary">
+        <section class="panel compact realtime-embedded-panel">
+          <div class="section-header">
+            <h3>{{ _('realtime.event_timeline', 'Confirmed Events') }}</h3>
+            <span class="badge badge-info">{{ _('realtime.live', 'Live') }}</span>
+          </div>
+          <div id="realtime-event-list" class="card-list realtime-scroll-list"></div>
+        </section>
+
+        <section class="panel compact realtime-embedded-panel">
+          <div class="section-header">
+            <h3>{{ _('realtime.live_risk_values', 'Rolling Risk Values') }}</h3>
+            <span class="badge badge-neutral">{{ _('realtime.rolling', 'Rolling') }}</span>
+          </div>
+          <div id="realtime-log" class="card-list realtime-scroll-list"></div>
+        </section>
+      </div>
+    </article>
+
+    <aside class="panel realtime-side-panel">
+      <section class="realtime-side-section">
+        <div>
+          <p class="realtime-label">{{ _('dashboard.active_driver', 'Active Driver') }}</p>
+          <h3>{{ active_driver["display_name"] }}</h3>
+          <p class="muted">{{ active_driver["description"] or _('common.no_description', 'No description entered.') }}</p>
+        </div>
+        <div class="button-row">
+          <a class="button secondary" href="{{ url_for('drivers') }}">{{ _('common.manage', 'Manage') }}</a>
+          <a class="button secondary" href="{{ url_for('dashboard') }}">{{ _('nav.dashboard', 'Dashboard') }}</a>
+        </div>
+      </section>
+
+      <section class="realtime-side-section">
+        <div class="realtime-telemetry-strip">
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.face', 'Behavior State') }}</span>
+            <strong id="metric-face-state">--</strong>
+          </div>
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.warning', 'Warning') }}</span>
+            <strong id="metric-warning">--</strong>
+          </div>
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.events', 'Events') }}</span>
+            <strong id="metric-event-count">--</strong>
+          </div>
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.temporal_buffer', 'Temporal Buffer') }}</span>
+            <strong id="metric-temporal-buffer-size">--</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="realtime-side-section">
+        <div class="realtime-telemetry-strip">
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.video_live', 'Video live') }}</span>
+            <strong id="metric-video-state">--</strong>
+          </div>
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.audio_monitor', 'Audio monitor') }}</span>
+            <strong id="metric-audio-state">--</strong>
+          </div>
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.skeleton_view', 'Skeleton view') }}</span>
+            <strong id="metric-skeleton-state">--</strong>
+          </div>
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.temporal_buffer', 'Temporal Buffer') }}</span>
+            <strong id="metric-temporal-buffer-size">--</strong>
+          </div>
+        </div>
+        <p class="muted" id="metric-live-mode-note">--</p>
+      </section>
+
+      <section class="realtime-side-section">
+        <div class="realtime-telemetry-strip">
+          <div class="realtime-mini-stat">
+            <span>{{ _('realtime.active_labels', 'Active labels') }}</span>
+            <strong id="metric-active-labels">--</strong>
+          </div>
+          <div class="realtime-mini-stat">
+            <span>EAR</span>
+            <strong id="metric-ear">--</strong>
+          </div>
+          <div class="realtime-mini-stat">
+            <span>MAR</span>
+            <strong id="metric-mar">--</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="realtime-side-section">
+        <div class="section-header">
+          <h3>{{ _('realtime.snapshot', 'Snapshot Preview') }}</h3>
+        </div>
+        <div class="snapshot-frame">
+          <p id="realtime-snapshot-empty" class="muted">{{ _('realtime.snapshot_empty', 'Snapshots appear here while the session is running.') }}</p>
+          <img id="realtime-snapshot-image" alt="{{ _('realtime.snapshot_preview_alt', 'Realtime snapshot preview') }}">
+        </div>
+      </section>
+
+      <section class="realtime-side-section">
+        <div class="section-header">
+          <h3>{{ _('realtime.skeleton_view', 'Skeleton View') }}</h3>
+          <span id="metric-skeleton-quality" class="badge badge-neutral">{{ _('common.none', '--') }}</span>
+        </div>
+        <div class="realtime-skeleton-frame">
+          <img id="skeleton-preview-image" alt="{{ _('realtime.skeleton_view', 'Skeleton View') }}">
+          <p id="skeleton-empty" class="muted">{{ _('realtime.skeleton_canvas_empty', 'Skeleton landmarks will appear here when the pose is visible.') }}</p>
+        </div>
+      </section>
+
+      <section class="realtime-audio-card">
+        <div class="section-header">
+          <h3>{{ _('realtime.audio_monitor', 'Audio Monitor') }}</h3>
+          <span id="metric-audio-activity" class="badge badge-neutral">{{ _('realtime.audio_idle', 'Mic idle') }}</span>
+        </div>
+        <div class="audio-meter-shell" aria-hidden="true">
+          <div id="audio-level-bar" class="audio-meter-bar"></div>
+        </div>
+        <p class="muted" id="metric-audio-detail">{{ _('realtime.audio_model_hint', 'Mic energy is streamed to the behavior model together with video and skeleton cues.') }}</p>
+      </section>
+    </aside>
+  </section>
+  {% else %}
+  <section class="panel">
+    <h2>{{ _('realtime.no_driver_title', 'No active driver') }}</h2>
+    <p class="muted">{{ _('realtime.no_driver', 'Realtime monitoring needs an active driver so the session can be saved with the right profile.') }}</p>
+    <a class="button primary" href="{{ url_for('drivers') }}">{{ _('common.select', 'Select') }} {{ _('common.driver', 'Driver') }}</a>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+{% endblock %}

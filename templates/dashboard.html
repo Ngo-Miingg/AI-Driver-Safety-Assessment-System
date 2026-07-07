@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('dashboard.title', 'Dashboard') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>{{ _('dashboard.title', 'Dashboard') }}</h2>
+    <p class="muted">
+      {{ _('dashboard.logged_in_as', 'Logged in as') }} {{ current_user["display_name"] or current_user["username"] }}.
+      {% if active_driver %}
+        {{ _('dashboard.active_driver', 'Active driver') }}: <strong>{{ active_driver["display_name"] }}</strong>.
+      {% else %}
+        {{ _('dashboard.no_active_driver', 'No active driver selected.') }}
+      {% endif %}
+    </p>
+  </div>
+    <div class="button-row">
+      <a class="button secondary" href="{{ url_for('realtime') }}">{{ _('nav.realtime', 'Realtime') }}</a>
+      <a class="button primary" href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Multimodal Video') }}</a>
+    </div>
+</section>
+
+<section class="metric-grid dashboard-metrics">
+  <article class="metric-card">
+    <span>{{ _('dashboard.total_sessions', 'Total Sessions') }}</span>
+    <strong>{{ total_sessions }}</strong>
+  </article>
+  <article class="metric-card">
+    <span>{{ _('dashboard.average_safety', 'Average Safety Score') }}</span>
+    <strong>{{ "%.0f"|format(average_safety) if average_safety is not none else "--" }}</strong>
+  </article>
+  <article class="metric-card">
+    <span>{{ _('dashboard.latest_safety', 'Latest Safety Score') }}</span>
+    <strong>{{ "%.0f"|format(latest_session["final_safety_score"]) if latest_session and latest_session["final_safety_score"] is not none else "--" }}</strong>
+  </article>
+  <article class="metric-card">
+    <span>{{ _('dashboard.drowsiness_events', 'Drowsiness Events') }}</span>
+    <strong>{{ event_counts.drowsiness }}</strong>
+  </article>
+  <article class="metric-card">
+    <span>{{ _('dashboard.distraction_events', 'Distraction Events') }}</span>
+    <strong>{{ event_counts.distraction }}</strong>
+  </article>
+  <article class="metric-card">
+    <span>{{ _('dashboard.phone_events', 'Phone Usage Events') }}</span>
+    <strong>{{ event_counts.phone }}</strong>
+  </article>
+</section>
+
+<section class="two-column">
+  <article class="panel">
+    <div class="section-header">
+      <h2>{{ _('dashboard.active_driver', 'Active Driver') }}</h2>
+      <a href="{{ url_for('drivers') }}">{{ _('common.manage', 'Manage') }}</a>
+    </div>
+    {% if active_driver %}
+      <div class="driver-card">
+        <h3>{{ active_driver["display_name"] }}</h3>
+        <p class="muted">{{ active_driver["description"] or _('drivers.no_description', 'No description entered.') }}</p>
+        <span class="badge badge-success">{{ tr(active_driver["status"]) }}</span>
+      </div>
+    {% else %}
+      <div class="empty-state compact-empty">
+        <p class="muted">{{ _('dashboard.select_driver_hint', 'Select a driver before uploading videos for multimodal analysis.') }}</p>
+        <a class="button primary" href="{{ url_for('drivers') }}">{{ _('common.select', 'Select') }} {{ _('common.driver', 'Driver') }}</a>
+      </div>
+    {% endif %}
+  </article>
+
+  <article class="panel">
+    <h2>{{ _('dashboard.quick_links', 'Quick Links') }}</h2>
+    <div class="quick-link-grid">
+      <a href="{{ url_for('realtime') }}">{{ _('nav.realtime', 'Realtime') }}</a>
+      <a href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Multimodal Video') }}</a>
+      <a href="{{ url_for('history') }}">{{ _('nav.history', 'History') }}</a>
+      <a href="{{ url_for('reports') }}">{{ _('nav.reports', 'Reports') }}</a>
+      <a href="{{ url_for('evaluation_page') }}">{{ _('nav.evaluation', 'Evaluation') }}</a>
+      <a href="{{ url_for('drivers') }}">{{ _('nav.drivers', 'Drivers') }}</a>
+    </div>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="section-header">
+    <h2>{{ _('dashboard.recent_sessions', 'Recent Sessions') }}</h2>
+    <a href="{{ url_for('history') }}">{{ _('dashboard.view_history', 'View history') }}</a>
+  </div>
+  {% if recent_sessions %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ _('common.session', 'Session') }}</th>
+            <th>{{ _('common.driver', 'Driver') }}</th>
+            <th>{{ _('common.type', 'Type') }}</th>
+            <th>{{ _('common.status', 'Status') }}</th>
+            <th>{{ _('common.safety', 'Safety') }}</th>
+            <th>{{ _('common.risk', 'Risk') }}</th>
+            <th>{{ _('common.alert', 'Alert') }}</th>
+            <th>{{ _('common.events', 'Events') }}</th>
+            <th>{{ _('common.started', 'Started') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in recent_sessions %}
+          <tr>
+            <td><a href="{{ url_for('session_detail', session_id=item['id']) }}">#{{ item["id"] }}</a></td>
+            <td>{{ item["driver_name"] }}</td>
+            <td><span class="badge badge-neutral">{{ tr(item["session_type"]) }}</span></td>
+            <td><span class="badge badge-info">{{ tr(item["status"]) }}</span></td>
+            <td>{{ "%.0f"|format(item["final_safety_score"]) if item["final_safety_score"] is not none else "--" }}</td>
+            <td>{{ "%.0f"|format(item["final_risk_score"]) if item["final_risk_score"] is not none else "--" }}</td>
+            <td><span class="badge {{ 'badge-danger' if item['final_alert_level'] == 'Danger' else ('badge-warning' if item['final_alert_level'] in ['Warning', 'Caution'] else 'badge-success') }}">{{ tr(item["final_alert_level"], "--") }}</span></td>
+            <td>{{ item["event_count"] or 0 }}</td>
+            <td>{{ item["started_at"] or item["created_at"] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">{{ _('dashboard.no_sessions', 'No sessions yet. Upload a video and run multimodal analysis to populate the dashboard.') }}</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="section-header">
+    <h2>{{ _('nav.drivers', 'Drivers') }}</h2>
+    <a href="{{ url_for('new_driver') }}">{{ _('drivers.new', 'New Driver') }}</a>
+  </div>
+  {% if drivers %}
+    <div class="card-list">
+      {% for driver in drivers[:4] %}
+      <div class="item-card">
+        <div>
+          <h3><a href="{{ url_for('driver_detail', driver_id=driver['id']) }}">{{ driver["display_name"] }}</a></h3>
+          <p class="muted">{{ driver["description"] or _('common.no_description', 'No description.') }}</p>
+        </div>
+        <form method="post" action="{{ url_for('select_driver', driver_id=driver['id']) }}">
+          <button type="submit" class="button small">{{ _('common.select', 'Select') }}</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">{{ _('dashboard.no_drivers', 'No drivers yet. Create a driver profile before multimodal video analysis.') }}</p>
+  {% endif %}
+</section>
+{% endblock %}

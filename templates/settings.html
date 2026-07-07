@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('settings.title', 'Settings') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <p class="realtime-kicker">{{ _('app.eyebrow', 'AI Driver Safety Assessment') }}</p>
+    <h2>{{ _('settings.title', 'Settings') }}</h2>
+    <p class="muted">{{ _('settings.helper', 'Tune threshold, FPS, snapshot, and detector configuration for upcoming analyses.') }}</p>
+  </div>
+</section>
+
+<form method="post" class="panel">
+  <div class="section-header">
+    <h3>{{ _('settings.title', 'Settings') }}</h3>
+    <div class="button-row">
+      <button class="button secondary" type="submit" name="action" value="reset">{{ _('settings.reset', 'Reset') }}</button>
+      <button class="button primary" type="submit" name="action" value="save">{{ _('settings.save', 'Save Settings') }}</button>
+    </div>
+  </div>
+
+  <div class="metric-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+    {% for definition in setting_definitions %}
+    <label class="panel compact" for="setting-{{ definition.key }}">
+      <strong>{{ setting_label(definition.key, definition.label) }}</strong>
+      <p class="muted">{{ setting_description(definition.key, definition.description) }}</p>
+      <input
+        id="setting-{{ definition.key }}"
+        name="{{ definition.key }}"
+        type="number"
+        min="{{ definition.minimum }}"
+        max="{{ definition.maximum }}"
+        step="{{ definition.step }}"
+        value="{{ settings_values.get(definition.key, definition.minimum) }}"
+      >
+    </label>
+    {% endfor %}
+  </div>
+</form>
+{% endblock %}

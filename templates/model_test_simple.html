@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="{{ current_language or 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Model Test</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --line: #d8e0ee;
+      --text: #142033;
+      --muted: #5b6b84;
+      --primary: #2f6fed;
+      --good: #0f9d58;
+      --warn: #d97706;
+      --bad: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .topbar h1 {
+      margin: 0 0 6px;
+      font-size: 32px;
+    }
+    .topbar p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .button, button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 15px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .button.primary, button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 420px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .panel h2, .panel h3 {
+      margin: 0 0 12px;
+    }
+    .stack { display: grid; gap: 14px; }
+    label { display: grid; gap: 8px; font-weight: 600; }
+    input[type="file"] {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    video {
+      width: 100%;
+      max-height: 260px;
+      background: #0f172a;
+      border-radius: 12px;
+    }
+    .muted { color: var(--muted); }
+    .flash {
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      min-height: 96px;
+    }
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .stat strong {
+      font-size: 28px;
+      line-height: 1.15;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .badge.good { color: var(--good); border-color: #b7e3cb; background: #effaf3; }
+    .badge.warn { color: var(--warn); border-color: #f5d09a; background: #fff7ea; }
+    .badge.bad { color: var(--bad); border-color: #f3b2b2; background: #fff1f1; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 700; }
+    .top3 { display: grid; gap: 4px; }
+    .path {
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      word-break: break-all;
+      color: var(--muted);
+    }
+    .camera-box {
+      background: #0f172a;
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 240px;
+      display: grid;
+      place-items: center;
+    }
+    .camera-box video {
+      max-height: 320px;
+      border-radius: 0;
+    }
+    @media (max-width: 1080px) {
+      .grid { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Simple Model Test</h1>
+        <p>Trang riêng để test model multimodal trên video upload, không đi qua luồng realtime.</p>
+      </div>
+      <div class="actions">
+        <a class="button" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="button" href="{{ url_for('multimodal_test') }}">Trang test cũ</a>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="grid">
+      <section class="panel stack">
+        <div>
+          <h2>Run Model</h2>
+          <p class="muted">Upload một video cabin, chạy model, xem kết quả clip-by-clip.</p>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="stack">
+          <label>
+            Video input
+            <input id="video-input" type="file" name="video" accept=".mp4,.avi,.mov,.mkv,video/mp4,video/x-msvideo,video/quicktime,video/x-matroska" required>
+          </label>
+          <button type="submit" class="primary">Run model</button>
+        </form>
+
+        <div class="stack">
+          <div>
+            <h3>Preview</h3>
+            <video id="video-preview" controls preload="metadata"></video>
+          </div>
+          <div>
+            <h3>Realtime camera</h3>
+            <div class="actions" style="margin-bottom:10px;">
+              <button type="button" id="start-camera">Start camera</button>
+              <button type="button" id="stop-camera">Stop camera</button>
+            </div>
+            <div class="camera-box">
+              <video id="camera-preview" autoplay playsinline muted></video>
+            </div>
+            <p class="muted" id="camera-status">Camera is idle.</p>
+          </div>
+          <div>
+            <h3>Model package</h3>
+            <div class="path">{{ model_path }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel stack">
+        <div>
+          <h2>Result</h2>
+          {% if result %}
+          <p class="muted">File: <strong>{{ result["original_filename"] }}</strong></p>
+          {% else %}
+          <p class="muted">Chưa có kết quả. Chọn video và bấm <strong>Run model</strong>.</p>
+          {% endif %}
+        </div>
+
+        {% if result %}
+        <div class="summary">
+          <div class="stat">
+            <span>Top label</span>
+            <strong>{{ tr(result["top_prediction"]["label"]) }}</strong>
+          </div>
+          <div class="stat">
+            <span>Confidence</span>
+            <strong>{{ "%.2f"|format(result["top_prediction"]["confidence"]) }}</strong>
+          </div>
+          <div class="stat">
+            <span>Audio</span>
+            <strong>{{ 'Yes' if result["top_prediction"]["audio_track_detected"] else 'No' }}</strong>
+          </div>
+          <div class="stat">
+            <span>Skeleton frames</span>
+            <strong>{{ result["top_prediction"]["pose_frame_count"] }}</strong>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="stat">
+            <span>Clip count</span>
+            <strong>{{ result["predictions"]|length }}</strong>
+          </div>
+          <div class="stat">
+            <span>Duration</span>
+            <strong>{{ "%.1f"|format(result["metadata"].duration_seconds or 0) }}s</strong>
+          </div>
+          <div class="stat">
+            <span>Frame count</span>
+            <strong>{{ result["metadata"].frame_count or 0 }}</strong>
+          </div>
+          <div class="stat">
+            <span>Resolution</span>
+            <strong>{{ result["metadata"].width or 0 }}x{{ result["metadata"].height or 0 }}</strong>
+          </div>
+        </div>
+
+        <div>
+          <h3>Top 3 overall</h3>
+          <div class="top3">
+            {% for item in result["top_prediction"]["top3"] %}
+            <div>
+              <span class="badge {% if loop.index == 1 %}bad{% elif loop.index == 2 %}warn{% else %}good{% endif %}">
+                {{ loop.index }}
+              </span>
+              {{ tr(item["class_name"]) }} - {{ "%.2f"|format(item["confidence"]) }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <h3>Clip predictions</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Start</th>
+                <th>End</th>
+                <th>Label</th>
+                <th>Conf</th>
+                <th>Audio</th>
+                <th>Pose</th>
+                <th>Top 3</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in result["predictions"] %}
+              <tr>
+                <td>{{ "%.1f"|format(item["start_seconds"]) }}</td>
+                <td>{{ "%.1f"|format(item["end_seconds"]) }}</td>
+                <td>{{ tr(item["label"]) }}</td>
+                <td>{{ "%.2f"|format(item["confidence"]) }}</td>
+                <td>{{ 'Yes' if item["audio_track_detected"] else 'No' }}</td>
+                <td>{{ item["pose_frame_count"] }}</td>
+                <td class="top3">
+                  {% for top in item["top3"] %}
+                  <div>{{ tr(top["class_name"]) }} - {{ "%.2f"|format(top["confidence"]) }}</div>
+                  {% endfor %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("video-input");
+    const preview = document.getElementById("video-preview");
+    const cameraPreview = document.getElementById("camera-preview");
+    const cameraStatus = document.getElementById("camera-status");
+    const startCameraButton = document.getElementById("start-camera");
+    const stopCameraButton = document.getElementById("stop-camera");
+    let cameraStream = null;
+
+    if (input && preview) {
+      input.addEventListener("change", () => {
+        const file = input.files && input.files[0];
+        if (!file) {
+          preview.removeAttribute("src");
+          preview.load();
+          return;
+        }
+        preview.src = URL.createObjectURL(file);
+        preview.load();
+      });
+    }
+
+    async function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        cameraStatus.textContent = "Browser does not support camera access.";
+        return;
+      }
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        cameraPreview.srcObject = cameraStream;
+        cameraStatus.textContent = "Camera is running.";
+      } catch (error) {
+        cameraStatus.textContent = `Cannot open camera: ${error.message || error}`;
+      }
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+        cameraStream = null;
+      }
+      if (cameraPreview) {
+        cameraPreview.srcObject = null;
+      }
+      cameraStatus.textContent = "Camera is idle.";
+    }
+
+    if (startCameraButton) {
+      startCameraButton.addEventListener("click", startCamera);
+    }
+    if (stopCameraButton) {
+      stopCameraButton.addEventListener("click", stopCamera);
+    }
+  </script>
+</body>
+</html>

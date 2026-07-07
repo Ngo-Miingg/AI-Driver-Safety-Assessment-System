@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('history.title', 'History') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>{{ _('history.title', 'History') }}</h2>
+    <p class="muted">{{ _('history.helper', 'Review uploaded-video multimodal sessions with scores, events, and reports.') }}</p>
+  </div>
+  <div class="button-row">
+    <a class="button primary" href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Multimodal Video') }}</a>
+  </div>
+</section>
+
+<section class="panel">
+  {% if sessions %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ _('common.session', 'Session') }}</th>
+            <th>{{ _('common.driver', 'Driver') }}</th>
+            <th>{{ _('common.type', 'Type') }}</th>
+            <th>{{ _('common.status', 'Status') }}</th>
+            <th>{{ _('common.safety', 'Safety') }}</th>
+            <th>{{ _('common.risk', 'Risk') }}</th>
+            <th>{{ _('common.alert', 'Alert') }}</th>
+            <th>{{ _('common.events', 'Events') }}</th>
+            <th>{{ _('common.duration', 'Duration') }}</th>
+            <th>{{ _('common.mode', 'Mode') }}</th>
+            <th>{{ _('common.created_started', 'Created / Started') }}</th>
+            <th>{{ _('common.open', 'Open') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in sessions %}
+          <tr>
+            <td><a href="{{ url_for('session_detail', session_id=session['id']) }}">#{{ session["id"] }}</a></td>
+            <td>{{ session["driver_name"] }}</td>
+            <td><span class="badge badge-neutral">{{ tr(session["session_type"]) }}</span></td>
+            <td><span class="badge badge-info">{{ tr(session["status"]) }}</span></td>
+            <td>{{ "%.0f"|format(session["final_safety_score"]) if session["final_safety_score"] is not none else "--" }}</td>
+            <td>{{ "%.0f"|format(session["final_risk_score"]) if session["final_risk_score"] is not none else "--" }}</td>
+            <td><span class="badge {{ 'badge-danger' if session['final_alert_level'] == 'Danger' else ('badge-warning' if session['final_alert_level'] in ['Warning', 'Caution'] else 'badge-success') }}">{{ tr(session["final_alert_level"], "--") }}</span></td>
+            <td>{{ session["event_count"] or 0 }}</td>
+            <td>
+              {% set duration = session["video_duration_seconds"] if session["video_duration_seconds"] is not none else session["duration_seconds"] %}
+              {{ "%.1fs"|format(duration) if duration is not none else "--" }}
+            </td>
+            <td>{{ tr(session["analysis_mode"], "--") }}</td>
+            <td>{{ session["created_at"] }}<br><span class="muted">{{ session["started_at"] or "--" }}</span></td>
+            <td>
+              <div class="button-row">
+                <a class="button small" href="{{ url_for('session_detail', session_id=session['id']) }}">{{ _('common.detail', 'Detail') }}</a>
+                {% if session["report_status"] %}
+                  <a class="button small secondary" href="{{ url_for('reports') }}">{{ _('common.report', 'Report') }}</a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <h2>{{ _('history.no_sessions_title', 'No sessions yet') }}</h2>
+      <p class="muted">{{ _('history.no_sessions', 'Upload a video and run multimodal analysis to create history.') }}</p>
+      <div class="button-row">
+        <a class="button primary" href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Multimodal Video') }}</a>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

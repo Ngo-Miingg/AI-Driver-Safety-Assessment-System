@@ -1,0 +1,44 @@
+[
+  {
+    "model": "YOLO26n baseline",
+    "role": "Lightweight baseline / realtime fallback",
+    "train_images": 3000,
+    "image_size": 512,
+    "epochs_logged": 25,
+    "best_epoch_by_map50_95": 21,
+    "precision": 0.93237,
+    "recall": 0.86031,
+    "map50": 0.92854,
+    "map50_95": 0.76828,
+    "logged_time_seconds": 665.055,
+    "model_size_mb": 5.115788459777832
+  },
+  {
+    "model": "RT-DETR-L compare",
+    "role": "RT-DETR comparison checkpoint",
+    "train_images": 3000,
+    "image_size": 512,
+    "epochs_logged": 17,
+    "best_epoch_by_map50_95": 14,
+    "precision": 0.93969,
+    "recall": 0.93286,
+    "map50": 0.95693,
+    "map50_95": 0.77543,
+    "logged_time_seconds": 1952.2,
+    "model_size_mb": 63.1185884475708
+  },
+  {
+    "model": "RT-DETR-L serious",
+    "role": "Selected main phone detector",
+    "train_images": 4500,
+    "image_size": 512,
+    "epochs_logged": 16,
+    "best_epoch_by_map50_95": 8,
+    "precision": 0.93331,
+    "recall": 0.92239,
+    "map50": 0.95497,
+    "map50_95": 0.80077,
+    "logged_time_seconds": 2993.76,
+    "model_size_mb": 63.11852741241455
+  }
+]

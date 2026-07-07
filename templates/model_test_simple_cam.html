@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="{{ current_language or 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Model Test Cam</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f6fb;
+      --panel: #ffffff;
+      --line: #d7e1ef;
+      --text: #132238;
+      --muted: #58708f;
+      --primary: #2f6fed;
+      --good: #0f9d58;
+      --warn: #d97706;
+      --bad: #dc2626;
+      --dark: #0f172a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+    .topbar h1 {
+      margin: 0 0 6px;
+      font-size: 34px;
+    }
+    .topbar p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 780px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .button, button, select, input[type="file"] {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+    .button, button {
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .button.primary, button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.9fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .panel h2, .panel h3 {
+      margin: 0 0 12px;
+    }
+    .muted { color: var(--muted); }
+    .flash {
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .feed-box {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: var(--dark);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #243247;
+    }
+    .feed-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: var(--dark);
+    }
+    .control-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: end;
+      margin-top: 12px;
+    }
+    .control-row label {
+      display: grid;
+      gap: 8px;
+      font-weight: 700;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 88px;
+      background: #fff;
+    }
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .stat strong {
+      display: block;
+      font-size: 16px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #fff;
+    }
+    .badge.good { color: var(--good); border-color: #b7e3cb; background: #effaf3; }
+    .badge.warn { color: var(--warn); border-color: #f4d4a7; background: #fff7eb; }
+    .badge.bad { color: var(--bad); border-color: #efb1b1; background: #fff1f1; }
+    .badge.neutral { color: var(--muted); }
+    .stack { display: grid; gap: 14px; }
+    .small-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .preview-box {
+      background: var(--dark);
+      border-radius: 12px;
+      border: 1px solid #243247;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+    .preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .empty {
+      color: #cbd5e1;
+      font-size: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+    .audio-meter {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e7eef8;
+      border: 1px solid var(--line);
+    }
+    .audio-bar {
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      transform: scaleX(0);
+      background: linear-gradient(90deg, #34d399, #f59e0b, #ef4444);
+    }
+    .event-log {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      min-height: 180px;
+      max-height: 260px;
+      overflow: auto;
+      background: #fbfdff;
+    }
+    .event-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .event-item:last-child { border-bottom: 0; }
+    .event-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    .path {
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    video {
+      width: 100%;
+      max-height: 220px;
+      background: #111827;
+      border-radius: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--muted); }
+    @media (max-width: 1260px) {
+      .layout { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .summary, .small-grid, .control-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Simple Model Test Cam</h1>
+        <p>
+          Trang này nối trực tiếp vào luồng realtime của model MMRT multimodal full v2 t4x2:
+          camera feed từ server, audio từ mic trình duyệt, skeleton preview và kết quả infer thật.
+        </p>
+        {% if demo_model_name %}
+        <p><strong>Demo model:</strong> {{ demo_model_name }}</p>
+        {% endif %}
+        {% if decision_mode %}
+        <p><strong>Decision mode:</strong> {{ decision_mode }}</p>
+        {% endif %}
+      </div>
+      <div class="actions">
+        <a class="button" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="button" href="{{ url_for('multimodal_test') }}">Trang test cũ</a>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="layout">
+      <section class="stack">
+        <div class="panel">
+          <div class="actions" style="justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h2 style="margin:0;">Realtime infer</h2>
+            <span id="live-status" class="badge neutral">Đang chờ</span>
+          </div>
+          <div class="feed-box">
+            <img id="live-feed" src="{{ url_for('realtime_feed') }}?ts={{ range(1, 999999)|random }}" alt="Realtime feed">
+          </div>
+          <div class="control-row">
+            <input id="phone-backend" type="hidden" value="disabled">
+            <div class="stat"><span>Phone use</span><strong>MMRT model</strong></div>
+            <button type="button" id="start-live" class="primary">Bắt đầu infer</button>
+            <button type="button" id="stop-live" disabled>Dừng</button>
+          </div>
+          <div class="summary">
+            <div class="stat"><span>Trạng thái hành vi</span><strong id="predicted-label">--</strong></div>
+            <div class="stat"><span>Độ tin cậy</span><strong id="predicted-confidence">--</strong></div>
+            <div class="stat"><span>Rủi ro</span><strong id="risk-score">--</strong></div>
+            <div class="stat"><span>An toàn</span><strong id="safety-score">--</strong></div>
+            <div class="stat"><span>Cảnh báo</span><strong id="alert-level">--</strong></div>
+            <div class="stat"><span>Sự kiện</span><strong id="event-count">0</strong></div>
+          </div>
+          <div class="summary">
+            <div class="stat"><span>Phát hiện mặt</span><strong id="face-detected">--</strong></div>
+            <div class="stat"><span>Phone use / MMRT</span><strong id="phone-detected">--</strong></div>
+            <div class="stat"><span>Audio</span><strong id="audio-state">--</strong></div>
+            <div class="stat"><span>Skeleton</span><strong id="skeleton-state">--</strong></div>
+            <div class="stat"><span>Temporal streak</span><strong id="temporal-streak">--</strong></div>
+            <div class="stat"><span>Phiên</span><strong id="session-id">--</strong></div>
+          </div>
+        </div>
+
+        <div class="panel stack">
+          <div class="actions" style="justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">Log sự kiện realtime</h3>
+            <span id="connection-badge" class="badge neutral">Mất kết nối</span>
+          </div>
+          <div id="event-log" class="event-log">
+            <div class="event-item">Chưa có sự kiện.</div>
+          </div>
+        </div>
+
+        <div class="panel stack">
+          <div>
+            <h2>Run model trên video upload</h2>
+            <p class="muted">Giữ lại để test clip-by-clip bằng chính package model này.</p>
+          </div>
+          <form method="post" enctype="multipart/form-data" class="stack">
+            <label style="display:grid; gap:8px; font-weight:700;">
+              Video input
+              <input id="video-input" type="file" name="video" accept=".mp4,.avi,.mov,.mkv,video/mp4,video/x-msvideo,video/quicktime,video/x-matroska" required>
+            </label>
+            <button type="submit" class="primary">Run model</button>
+          </form>
+          <div>
+            <h3>Preview</h3>
+            <video id="video-preview" controls preload="metadata"></video>
+          </div>
+          <div>
+            <h3>Model package</h3>
+            <div class="path">{{ model_path }}</div>
+          </div>
+
+          {% if result %}
+          <div class="summary">
+            <div class="stat"><span>Top label</span><strong>{{ tr(result["top_prediction"]["label"]) }}</strong></div>
+            <div class="stat"><span>Confidence</span><strong>{{ "%.2f"|format(result["top_prediction"]["confidence"]) }}</strong></div>
+            <div class="stat"><span>Audio</span><strong>{{ 'Yes' if result["top_prediction"]["audio_track_detected"] else 'No' }}</strong></div>
+            <div class="stat"><span>Skeleton frames</span><strong>{{ result["top_prediction"]["pose_frame_count"] }}</strong></div>
+            <div class="stat"><span>Clip count</span><strong>{{ result["predictions"]|length }}</strong></div>
+            <div class="stat"><span>Duration</span><strong>{{ "%.1f"|format(result["metadata"].duration_seconds or 0) }}s</strong></div>
+          </div>
+          <div>
+            <h3>Clip predictions</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Label</th>
+                  <th>Conf</th>
+                  <th>Audio</th>
+                  <th>Pose</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in result["predictions"] %}
+                <tr>
+                  <td>{{ "%.1f"|format(item["start_seconds"]) }}</td>
+                  <td>{{ "%.1f"|format(item["end_seconds"]) }}</td>
+                  <td>{{ tr(item["label"]) }}</td>
+                  <td>{{ "%.2f"|format(item["confidence"]) }}</td>
+                  <td>{{ 'Yes' if item["audio_track_detected"] else 'No' }}</td>
+                  <td>{{ item["pose_frame_count"] }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <aside class="stack">
+        <div class="panel stack">
+          <div class="actions" style="justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">Tài xế đang chọn</h3>
+            <span class="badge {% if active_driver %}good{% else %}warn{% endif %}">
+              {% if active_driver %}Sẵn sàng{% else %}Chưa chọn{% endif %}
+            </span>
+          </div>
+          {% if active_driver %}
+          <div><strong>{{ active_driver["display_name"] }}</strong></div>
+          <div class="muted">{{ active_driver["description"] or 'Không có mô tả.' }}</div>
+          {% else %}
+          <div class="muted">Bạn cần chọn active driver trước khi bấm bắt đầu infer.</div>
+          {% endif %}
+        </div>
+
+        <div class="panel stack">
+          <div class="actions" style="justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">Theo dõi âm thanh</h3>
+            <span id="audio-badge" class="badge neutral">Mic đang chờ</span>
+          </div>
+          <div class="audio-meter"><div id="audio-bar" class="audio-bar"></div></div>
+          <div class="muted" id="audio-detail">RMS: 0.000</div>
+        </div>
+
+        <div class="panel stack">
+          <h3>Khung skeleton</h3>
+          <div class="preview-box">
+            <img id="skeleton-image" alt="Skeleton preview" style="display:none;">
+            <div id="skeleton-empty" class="empty">Chưa có skeleton preview.</div>
+          </div>
+        </div>
+
+        <div class="panel stack">
+          <h3>Snapshot infer</h3>
+          <div class="preview-box">
+            <img id="snapshot-image" alt="Snapshot preview" style="display:none;">
+            <div id="snapshot-empty" class="empty">Chưa có snapshot infer.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+  <script>
+    const socket = window.io ? window.io() : null;
+    const currentLanguage = "{{ current_language or 'en' }}";
+    const liveFeed = document.getElementById("live-feed");
+    const phoneBackend = document.getElementById("phone-backend");
+    const startButton = document.getElementById("start-live");
+    const stopButton = document.getElementById("stop-live");
+    const statusBadge = document.getElementById("live-status");
+    const connectionBadge = document.getElementById("connection-badge");
+    const eventLog = document.getElementById("event-log");
+    const audioBadge = document.getElementById("audio-badge");
+    const audioBar = document.getElementById("audio-bar");
+    const audioDetail = document.getElementById("audio-detail");
+    const skeletonImage = document.getElementById("skeleton-image");
+    const skeletonEmpty = document.getElementById("skeleton-empty");
+    const snapshotImage = document.getElementById("snapshot-image");
+    const snapshotEmpty = document.getElementById("snapshot-empty");
+    const liveFeedBaseUrl = "{{ url_for('realtime_feed') }}";
+
+    const fields = {
+      predictedLabel: document.getElementById("predicted-label"),
+      predictedConfidence: document.getElementById("predicted-confidence"),
+      riskScore: document.getElementById("risk-score"),
+      safetyScore: document.getElementById("safety-score"),
+      alertLevel: document.getElementById("alert-level"),
+      eventCount: document.getElementById("event-count"),
+      faceDetected: document.getElementById("face-detected"),
+      phoneDetected: document.getElementById("phone-detected"),
+      audioState: document.getElementById("audio-state"),
+      skeletonState: document.getElementById("skeleton-state"),
+      temporalStreak: document.getElementById("temporal-streak"),
+      sessionId: document.getElementById("session-id"),
+    };
+
+    const input = document.getElementById("video-input");
+    const preview = document.getElementById("video-preview");
+
+    let audioContext = null;
+    let audioStream = null;
+    let audioSource = null;
+    let audioProcessor = null;
+    let audioGain = null;
+    let liveFeedAttached = true;
+
+    function setText(node, value) {
+      if (node) node.textContent = value == null || value === "" ? "--" : String(value);
+    }
+
+    function setStatus(text, tone = "neutral") {
+      statusBadge.textContent = text;
+      statusBadge.className = `badge ${tone}`;
+    }
+
+    function setConnection(connected) {
+      connectionBadge.textContent = connected ? "Đã kết nối" : "Mất kết nối";
+      connectionBadge.className = `badge ${connected ? "good" : "warn"}`;
+    }
+
+    function translateLabel(value) {
+      const map = {
+        normal_driving: "Lái xe bình thường",
+        phone_interaction: "Tương tác điện thoại",
+        phone_calling: "Gọi điện",
+        texting: "Nhắn tin",
+        visual_posture_distraction: "Tư thế / thị giác gây xao nhãng",
+        head_down: "Cúi đầu",
+        drowsy: "Buồn ngủ",
+        yawning: "Ngáp",
+        distracted: "Mất tập trung",
+        monitoring: "Đang theo dõi",
+      };
+      return map[String(value || "").trim().toLowerCase()] || value || "--";
+    }
+
+    function translateAlert(value) {
+      const map = {
+        normal: "Bình thường",
+        low: "Thấp",
+        medium: "Trung bình",
+        high: "Cao",
+        danger: "Nguy hiểm",
+      };
+      return map[String(value || "").trim().toLowerCase()] || value || "--";
+    }
+
+    function setAudioMeter(rms) {
+      const level = Math.max(0, Math.min(1, Number(rms || 0)));
+      audioBar.style.transform = `scaleX(${Math.max(level, 0.02)})`;
+      audioDetail.textContent = `RMS: ${level.toFixed(3)}`;
+      const active = level >= 0.035;
+      audioBadge.textContent = active ? "Mic có tín hiệu" : "Mic đang chờ";
+      audioBadge.className = `badge ${active ? "good" : "neutral"}`;
+    }
+
+    function setPreview(imageNode, emptyNode, imageUrl) {
+      if (imageUrl) {
+        imageNode.src = imageUrl;
+        imageNode.style.display = "block";
+        emptyNode.style.display = "none";
+      } else {
+        imageNode.removeAttribute("src");
+        imageNode.style.display = "none";
+        emptyNode.style.display = "grid";
+      }
+    }
+
+    function attachLiveFeed() {
+      if (!liveFeed || liveFeedAttached) return;
+      liveFeed.src = `${liveFeedBaseUrl}?ts=${Date.now()}`;
+      liveFeedAttached = true;
+    }
+
+    function detachLiveFeed() {
+      if (!liveFeed || !liveFeedAttached) return;
+      liveFeed.removeAttribute("src");
+      liveFeedAttached = false;
+    }
+
+    function resetRealtimeState() {
+      setText(fields.predictedLabel, "--");
+      setText(fields.predictedConfidence, "--");
+      setText(fields.riskScore, "--");
+      setText(fields.safetyScore, "--");
+      setText(fields.alertLevel, "--");
+      setText(fields.eventCount, "0");
+      setText(fields.faceDetected, "--");
+      setText(fields.phoneDetected, "--");
+      setText(fields.audioState, "--");
+      setText(fields.skeletonState, "--");
+      setText(fields.temporalStreak, "--");
+      setText(fields.sessionId, "--");
+      setPreview(skeletonImage, skeletonEmpty, null);
+      setPreview(snapshotImage, snapshotEmpty, null);
+    }
+
+    function addEvent(payload, tone = "neutral") {
+      if (!eventLog) return;
+      const first = eventLog.querySelector(".event-item");
+      if (first && first.textContent === "Chưa có sự kiện.") {
+        first.remove();
+      }
+      const item = document.createElement("div");
+      item.className = "event-item";
+      const title = document.createElement("strong");
+      title.textContent = payload.title || "Realtime event";
+      const body = document.createElement("div");
+      body.textContent = payload.body || "";
+      if (tone === "error") title.style.color = "#dc2626";
+      if (tone === "warn") title.style.color = "#d97706";
+      item.appendChild(title);
+      item.appendChild(body);
+      eventLog.prepend(item);
+    }
+
+    async function startAudioCapture() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Browser không hỗ trợ microphone.");
+      }
+      if (audioContext) return;
+
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioContext = new AudioContextClass();
+      audioSource = audioContext.createMediaStreamSource(audioStream);
+      audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+      audioGain = audioContext.createGain();
+      audioGain.gain.value = 0;
+
+      audioProcessor.onaudioprocess = (event) => {
+        const chunk = event.inputBuffer.getChannelData(0);
+        let sum = 0;
+        for (let i = 0; i < chunk.length; i += 1) {
+          sum += chunk[i] * chunk[i];
+        }
+        const rms = Math.sqrt(sum / Math.max(chunk.length, 1));
+        setAudioMeter(rms);
+        if (socket) {
+          socket.emit("realtime_audio_chunk", {
+            samples: chunk.buffer,
+            sample_rate: audioContext.sampleRate || 16000,
+          });
+        }
+      };
+
+      audioSource.connect(audioProcessor);
+      audioProcessor.connect(audioGain);
+      audioGain.connect(audioContext.destination);
+    }
+
+    async function stopAudioCapture() {
+      setAudioMeter(0);
+      if (audioProcessor) {
+        try { audioProcessor.disconnect(); } catch (error) {}
+        audioProcessor.onaudioprocess = null;
+        audioProcessor = null;
+      }
+      if (audioSource) {
+        try { audioSource.disconnect(); } catch (error) {}
+        audioSource = null;
+      }
+      if (audioGain) {
+        try { audioGain.disconnect(); } catch (error) {}
+        audioGain = null;
+      }
+      if (audioContext) {
+        try { await audioContext.close(); } catch (error) {}
+        audioContext = null;
+      }
+      if (audioStream) {
+        audioStream.getTracks().forEach((track) => track.stop());
+        audioStream = null;
+      }
+    }
+
+    async function beginLiveInfer() {
+      if (!socket) {
+        throw new Error("Socket.IO không khả dụng.");
+      }
+      detachLiveFeed();
+      setPreview(snapshotImage, snapshotEmpty, null);
+      await startAudioCapture();
+      socket.emit("set_realtime_language", { language: currentLanguage });
+      socket.emit("start_realtime_session", {
+        behavior_model_backend: "mmrt_multimodal_full_v2_t4x2",
+        phone_detector_backend: "disabled",
+        language: currentLanguage,
+      });
+    }
+
+    function stopLiveInfer() {
+      if (socket) socket.emit("stop_realtime_session");
+      stopAudioCapture();
+      window.setTimeout(attachLiveFeed, 500);
+    }
+
+    if (input && preview) {
+      input.addEventListener("change", () => {
+        const file = input.files && input.files[0];
+        if (!file) {
+          preview.removeAttribute("src");
+          preview.load();
+          return;
+        }
+        preview.src = URL.createObjectURL(file);
+        preview.load();
+      });
+    }
+
+    if (liveFeed) {
+      liveFeed.addEventListener("error", () => {
+        addEvent({ title: "Feed lỗi", body: "Không tải được realtime feed từ server." }, "error");
+      });
+    }
+
+    if (socket) {
+      socket.on("connect", () => {
+        setConnection(true);
+        socket.emit("set_realtime_language", { language: currentLanguage });
+      });
+
+      socket.on("disconnect", () => {
+        setConnection(false);
+        setStatus("Mất kết nối", "warn");
+        attachLiveFeed();
+      });
+
+      socket.on("realtime_status", (payload) => {
+        if (!payload) return;
+        if (payload.status === "starting") {
+          setStatus("Đang khởi động infer", "warn");
+          startButton.disabled = true;
+          stopButton.disabled = false;
+          addEvent({ title: "Khởi động", body: "Backend đang bắt đầu phiên realtime infer." });
+        } else if (payload.status === "running") {
+          attachLiveFeed();
+          setStatus("Đang infer", "good");
+          startButton.disabled = true;
+          stopButton.disabled = false;
+          setText(fields.sessionId, payload.session_id || "--");
+        } else if (payload.status === "stopping") {
+          setStatus("Đang dừng", "warn");
+        } else if (payload.status === "completed") {
+          attachLiveFeed();
+          setStatus("Đã hoàn tất", "good");
+          startButton.disabled = false;
+          stopButton.disabled = true;
+          addEvent({
+            title: "Hoàn tất",
+            body: `Safety ${payload.final_safety_score} | Risk ${payload.final_risk_score} | Alert ${translateAlert(payload.final_alert_level)}`,
+          });
+          stopAudioCapture();
+        }
+      });
+
+      socket.on("realtime_update", (payload) => {
+        if (!payload) return;
+        setStatus("Đang infer", "good");
+        setText(fields.predictedLabel, translateLabel(payload.active_labels || payload.predicted_label));
+        setText(fields.predictedConfidence, payload.predicted_confidence != null ? Number(payload.predicted_confidence).toFixed(2) : "--");
+        setText(fields.riskScore, payload.risk_score != null ? Number(payload.risk_score).toFixed(1) : "--");
+        setText(fields.safetyScore, payload.safety_score != null ? Number(payload.safety_score).toFixed(1) : "--");
+        setText(fields.alertLevel, translateAlert(payload.alert_level));
+        setText(fields.eventCount, payload.event_count != null ? payload.event_count : "0");
+        setText(fields.faceDetected, payload.face_detected ? "Có" : "Không");
+        setText(fields.phoneDetected, payload.phone_detected ? "Có" : "Không");
+        setText(fields.audioState, payload.audio_state || "--");
+        setText(fields.skeletonState, payload.skeleton_state || "--");
+        setText(fields.temporalStreak, payload.temporal_streak != null ? payload.temporal_streak : "--");
+        setText(fields.sessionId, payload.session_id || "--");
+        setPreview(skeletonImage, skeletonEmpty, payload.skeleton_image || null);
+      });
+
+      socket.on("realtime_snapshot", (payload) => {
+        if (!payload) return;
+        setPreview(snapshotImage, snapshotEmpty, payload.image || null);
+      });
+
+      socket.on("realtime_event", (payload) => {
+        if (!payload) return;
+        const start = payload.start_time_seconds != null ? Number(payload.start_time_seconds).toFixed(1) : "--";
+        const end = payload.end_time_seconds != null ? Number(payload.end_time_seconds).toFixed(1) : "--";
+        const conf = payload.confidence != null ? Number(payload.confidence).toFixed(2) : "--";
+        addEvent({
+          title: `${translateLabel(payload.event_type)} | ${payload.severity || "event"}`,
+          body: `Start ${start}s - End ${end}s | Conf ${conf}`,
+        }, payload.severity === "critical" ? "error" : "warn");
+      });
+
+      socket.on("realtime_error", (payload) => {
+        const message = payload && payload.message ? payload.message : "Realtime infer thất bại.";
+        setStatus("Lỗi", "bad");
+        startButton.disabled = false;
+        stopButton.disabled = true;
+        addEvent({ title: "Lỗi realtime", body: message }, "error");
+        stopAudioCapture();
+        attachLiveFeed();
+      });
+    } else {
+      setStatus("Socket.IO không khả dụng", "bad");
+      addEvent({ title: "Lỗi", body: "Không tải được Socket.IO client." }, "error");
+    }
+
+    startButton.addEventListener("click", async () => {
+      try {
+        await beginLiveInfer();
+      } catch (error) {
+        setStatus("Lỗi", "bad");
+        addEvent({ title: "Không thể bắt đầu infer", body: error.message || String(error) }, "error");
+      }
+    });
+
+    stopButton.addEventListener("click", () => {
+      stopLiveInfer();
+      setStatus("Đang chờ", "neutral");
+      startButton.disabled = false;
+      stopButton.disabled = true;
+    });
+
+    resetRealtimeState();
+    setConnection(false);
+    setStatus("Đang chờ", "neutral");
+    setAudioMeter(0);
+    attachLiveFeed();
+  </script>
+</body>
+</html>

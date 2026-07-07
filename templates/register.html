@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('register.title', 'Create Account') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="panel auth-panel">
+  <h2>{{ _('register.title', 'Create Account') }}</h2>
+  <p class="muted">{{ _('register.helper', 'Local accounts are stored in SQLite for the demo application.') }}</p>
+
+  <form method="post" class="form-stack">
+    <label>
+      {{ _('login.username', 'Username') }}
+      <input name="username" autocomplete="username" required>
+    </label>
+    <label>
+      {{ _('register.display_name', 'Display name') }}
+      <input name="display_name" autocomplete="name">
+    </label>
+    <label>
+      {{ _('login.password', 'Password') }}
+      <input name="password" type="password" autocomplete="new-password" required>
+    </label>
+    <label>
+      {{ _('register.confirm_password', 'Confirm password') }}
+      <input name="confirm_password" type="password" autocomplete="new-password" required>
+    </label>
+    <div class="button-row">
+      <button type="submit" class="button primary">{{ _('register.create', 'Create account') }}</button>
+      <a href="{{ url_for('login') }}" class="button secondary">{{ _('register.back_login', 'Back to login') }}</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

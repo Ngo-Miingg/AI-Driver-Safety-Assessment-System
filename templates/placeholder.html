@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tr(page_title, page_title) }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2>{{ tr(page_title, page_title) }}</h2>
+  <p class="muted">{{ message }}</p>
+  {% if active_driver_name %}
+    <p>{{ _('dashboard.active_driver', 'Active driver') }}: <strong>{{ active_driver_name }}</strong></p>
+  {% else %}
+    <p class="muted">{{ _('dashboard.no_active_driver', 'No active driver selected yet.') }}</p>
+  {% endif %}
+  <a class="button secondary" href="{{ url_for('dashboard') }}">{{ _('nav.dashboard', 'Back to dashboard') }}</a>
+</section>
+{% endblock %}

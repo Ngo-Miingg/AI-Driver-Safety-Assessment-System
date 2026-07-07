@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ driver["display_name"] }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>{{ driver["display_name"] }}</h2>
+    <p class="muted">{{ driver["description"] or _('drivers.no_description', 'No description provided.') }}</p>
+  </div>
+  <div class="button-row">
+    <form method="post" action="{{ url_for('select_driver', driver_id=driver['id']) }}">
+      <button type="submit" class="button primary">{{ _('drivers.select', 'Select Driver') }}</button>
+    </form>
+    <a class="button secondary" href="{{ url_for('edit_driver', driver_id=driver['id']) }}">{{ _('common.edit', 'Edit') }}</a>
+  </div>
+</section>
+
+<section class="metric-grid">
+  <article class="metric-card">
+    <span>{{ _('dashboard.total_sessions', 'Total Sessions') }}</span>
+    <strong>{{ summary["total_sessions"] or 0 }}</strong>
+  </article>
+  <article class="metric-card">
+    <span>{{ _('dashboard.average_safety', 'Average Safety Score') }}</span>
+    <strong>{{ "%.0f"|format(summary["average_safety"]) if summary["average_safety"] is not none else "--" }}</strong>
+  </article>
+  <article class="metric-card">
+    <span>{{ _('common.status', 'Status') }}</span>
+    <strong>{{ tr(driver["status"]) }}</strong>
+  </article>
+</section>
+
+<section class="panel">
+  <h2>{{ _('drivers.details', 'Driver Details') }}</h2>
+  <dl class="detail-list">
+    <div>
+      <dt>{{ _('common.created', 'Created') }}</dt>
+      <dd>{{ driver["created_at"] }}</dd>
+    </div>
+    <div>
+      <dt>{{ _('common.updated', 'Updated') }}</dt>
+      <dd>{{ driver["updated_at"] or _('common.not_updated', 'Not updated yet') }}</dd>
+    </div>
+    <div>
+      <dt>{{ _('common.notes', 'Notes') }}</dt>
+      <dd>{{ driver["notes"] or _('common.none', 'No notes provided.') }}</dd>
+    </div>
+  </dl>
+</section>
+{% endblock %}

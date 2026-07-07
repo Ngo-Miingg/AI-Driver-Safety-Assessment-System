@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('reports.title', 'Reports') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>{{ _('reports.title', 'Reports') }}</h2>
+    <p class="muted">{{ _('reports.helper', 'Generated rule-based driver safety reports for analyzed sessions.') }}</p>
+  </div>
+  <form class="inline-filter" method="get" action="{{ url_for('reports') }}">
+    <select name="driver_id" aria-label="{{ _('common.filter', 'Filter') }}">
+      <option value="">{{ _('common.all_drivers', 'All drivers') }}</option>
+      {% for driver in drivers %}
+        <option value="{{ driver['id'] }}" {% if selected_driver_id == driver['id'] %}selected{% endif %}>{{ driver["display_name"] }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="button secondary">{{ _('common.filter', 'Filter') }}</button>
+  </form>
+</section>
+
+<section class="panel">
+  {% if reports %}
+    <div class="card-list">
+      {% for report in reports %}
+      <article class="item-card report-card">
+        <div>
+          <h3><a href="{{ url_for('session_detail', session_id=report['session_id']) }}">{{ rt(report["title"]) if report["title"] else _('reports.session_report', 'Session Report') }}</a></h3>
+          <p class="muted">
+            {{ _('common.driver', 'Driver') }}: {{ report["driver_name"] }} · {{ _('common.session', 'Session') }} #{{ report["session_id"] }} ·
+            {{ tr(report["session_type"]) }} · {{ report["generated_at"] or report["created_at"] }}
+          </p>
+          <p>{{ rt(report["summary"]) }}</p>
+        </div>
+        <div class="report-score">
+          <span>{{ _('common.safety', 'Safety') }}</span>
+          <strong>{{ "%.0f"|format(report["final_safety_score"]) if report["final_safety_score"] is not none else "--" }}</strong>
+          <span class="badge {{ 'badge-danger' if report['final_alert_level'] == 'Danger' else ('badge-warning' if report['final_alert_level'] in ['Warning', 'Caution'] else 'badge-success') }}">{{ tr(report["final_alert_level"], "--") }}</span>
+          <a class="button small" href="{{ url_for('session_detail', session_id=report['session_id']) }}">{{ _('common.open', 'Open') }}</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <h2>{{ _('reports.no_reports_title', 'No reports yet') }}</h2>
+      <p class="muted">{{ _('reports.no_reports', 'Reports are generated after multimodal analysis completes.') }}</p>
+      <a class="button primary" href="{{ url_for('history') }}">{{ _('reports.open_history', 'Open History') }}</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

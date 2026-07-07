@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('login.title', 'Login') }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="auth-layout">
+  <div class="panel auth-panel">
+    <h2>{{ _('login.title', 'Login') }}</h2>
+    <p class="muted">{{ _('login.helper', 'Use the local demo account or a registered account.') }}</p>
+
+    <form method="post" class="form-stack">
+      <label>
+        {{ _('login.username', 'Username') }}
+        <input name="username" autocomplete="username" required>
+      </label>
+      <label>
+        {{ _('login.password', 'Password') }}
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit" class="button primary">{{ _('login.submit', 'Login') }}</button>
+    </form>
+  </div>
+
+  <aside class="panel compact">
+    <h2>{{ _('login.demo_user', 'Demo User') }}</h2>
+    <dl class="detail-list">
+      <div>
+        <dt>{{ _('login.username', 'Username') }}</dt>
+        <dd>admin</dd>
+      </div>
+      <div>
+        <dt>{{ _('login.password', 'Password') }}</dt>
+        <dd>admin123</dd>
+      </div>
+    </dl>
+    <p class="muted">{{ _('login.demo_note', 'This seeded account is for local graduation demo use only.') }}</p>
+    <a href="{{ url_for('register') }}" class="button secondary">{{ _('login.create_account', 'Create another account') }}</a>
+  </aside>
+</section>
+{% endblock %}

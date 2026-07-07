@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tr(form_title, form_title) }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2>{{ tr(form_title, form_title) }}</h2>
+  <form method="post" class="form-stack">
+    <label>
+      {{ _('drivers.name', 'Driver name') }}
+      <input name="display_name" value="{{ driver['display_name'] if driver else '' }}" required>
+    </label>
+    <label>
+      {{ _('common.description', 'Description') }}
+      <input name="description" value="{{ driver['description'] if driver and driver['description'] else '' }}">
+    </label>
+    <label>
+      {{ _('common.notes', 'Notes') }}
+      <textarea name="notes" rows="5">{{ driver['notes'] if driver and driver['notes'] else '' }}</textarea>
+    </label>
+    {% if driver %}
+    <label>
+      {{ _('common.status', 'Status') }}
+      <select name="status">
+        <option value="active" {% if driver['status'] == 'active' %}selected{% endif %}>{{ tr('active') }}</option>
+        <option value="inactive" {% if driver['status'] == 'inactive' %}selected{% endif %}>{{ tr('inactive') }}</option>
+      </select>
+    </label>
+    {% endif %}
+    <div class="button-row">
+      <button class="button primary" type="submit">{{ _('drivers.save', 'Save driver') }}</button>
+      <a class="button secondary" href="{{ url_for('drivers') }}">{{ _('common.cancel', 'Cancel') }}</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

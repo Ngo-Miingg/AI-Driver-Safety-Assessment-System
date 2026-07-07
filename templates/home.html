@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('home.title', 'Home') }} - {{ _('app.title', app_title) }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div>
+    <h2>{{ _('home.foundation_running', 'Application foundation is running') }}</h2>
+    <p>
+      {{ _('home.foundation_text', 'Flask, SQLite, authentication, dashboard, multimodal video analysis, reports, and evaluation tooling are initialized.') }}
+    </p>
+  </div>
+
+  <dl class="status-grid">
+    <div>
+      <dt>Flask</dt>
+      <dd>{{ _('home.started', 'Started') }}</dd>
+    </div>
+    <div>
+      <dt>SocketIO</dt>
+      <dd id="socket-status">{{ _('home.connecting', 'Connecting') }}</dd>
+    </div>
+    <div>
+      <dt>SQLite</dt>
+      <dd>{{ _('home.connected', 'Connected') }}</dd>
+    </div>
+    <div>
+      <dt>{{ _('home.database', 'Database') }}</dt>
+      <dd class="path">{{ database_path }}</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="panel compact">
+  <h2>{{ _('home.scope', 'Foundation scope') }}</h2>
+  <ul>
+    <li>{{ _('home.scope_db', 'Database tables initialize automatically on startup.') }}</li>
+    <li>{{ _('home.scope_sessions', 'Flask sessions are configured through the application secret key.') }}</li>
+    <li>{{ _('home.scope_socket', 'SocketIO accepts connections and emits a server status event.') }}</li>
+    <li>{{ _('home.scope_ai', 'The primary workflow is multimodal video-audio-skeleton behavior analysis.') }}</li>
+  </ul>
+</section>
+{% endblock %}

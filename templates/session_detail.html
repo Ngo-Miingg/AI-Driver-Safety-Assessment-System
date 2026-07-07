@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('session.title', 'Session') }} {{ session["id"] }} - {{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>{{ _('session.title', 'Session') }} #{{ session["id"] }}</h2>
+    <p class="muted">
+      {{ tr(session["session_type"]) }} {{ _('session.for', 'for') }} <strong>{{ session["driver_name"] }}</strong>.
+      {{ _('common.status', 'Status') }}: <span class="badge badge-info">{{ tr(session["status"]) }}</span>
+    </p>
+  </div>
+  <div class="button-row">
+    {% if session["session_type"] == "uploaded_video" %}
+      <form method="post" action="{{ url_for('run_multimodal_analysis', session_id=session['id']) }}">
+        <button type="submit" class="button primary">{{ _('session.run_multimodal', 'Run Multimodal Analysis') }}</button>
+      </form>
+    {% endif %}
+    <a class="button secondary" href="{{ url_for('history') }}">{{ _('nav.history', 'History') }}</a>
+  </div>
+</section>
+
+{% if session["session_type"] == "uploaded_video" %}
+<section class="panel">
+  <div class="section-header">
+    <h2>{{ _('session.unified_flow', 'Unified multimodal flow') }}</h2>
+    <span class="badge badge-info">{{ _('session.metadata_ready', 'Metadata ready') }}</span>
+  </div>
+  <p class="muted">
+    {{ _('session.unified_flow_note', 'Upload prepares video metadata automatically. The main analysis step combines video, audio, and skeleton cues in one multimodal model.') }}
+  </p>
+</section>
+{% endif %}
+
+<section class="metric-grid detail-score-grid">
+  <article class="metric-card score-card">
+    <span>{{ _('common.safety_score', 'Safety Score') }}</span>
+    <strong>{{ "%.0f"|format(session["final_safety_score"]) if session["final_safety_score"] is not none else "--" }}</strong>
+  </article>
+  <article class="metric-card score-card">
+    <span>{{ _('common.risk_score', 'Risk Score') }}</span>
+    <strong>{{ "%.0f"|format(session["final_risk_score"]) if session["final_risk_score"] is not none else "--" }}</strong>
+  </article>
+  <article class="metric-card score-card">
+    <span>{{ _('common.alert_level', 'Alert Level') }}</span>
+    <strong>
+      <span class="badge {{ 'badge-danger' if session['final_alert_level'] == 'Danger' else ('badge-warning' if session['final_alert_level'] in ['Warning', 'Caution'] else 'badge-success') }}">
+        {{ tr(session["final_alert_level"], "--") }}
+      </span>
+    </strong>
+  </article>
+  <article class="metric-card score-card">
+    <span>{{ _('session.fatigue_trend', 'Fatigue Trend') }}</span>
+    <strong>{{ tr(session["fatigue_trend_label"], "--") }}</strong>
+  </article>
+  <article class="metric-card score-card">
+    <span>{{ _('common.events', 'Events') }}</span>
+    <strong>{{ events|length }}</strong>
+  </article>
+</section>
+
+{% if session["analysis_error"] or session["phone_detection_error"] %}
+<section class="panel warning-panel">
+  <h2>{{ _('session.analysis_warnings', 'Analysis Warnings') }}</h2>
+  {% if session["analysis_error"] %}
+    <p>{{ session["analysis_error"] }}</p>
+  {% endif %}
+  {% if session["phone_detection_error"] %}
+    <p>{{ _('session.phone_detector_warning', 'Phone detector warning') }}: {{ session["phone_detection_error"] }}</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="two-column">
+  <article class="panel">
+    <h2>{{ _('session.summary', 'Summary') }}</h2>
+    <dl class="detail-list">
+      <div><dt>{{ _('common.driver', 'Driver') }}</dt><dd>{{ session["driver_name"] }}</dd></div>
+      <div><dt>{{ _('session.session_type', 'Session type') }}</dt><dd>{{ tr(session["session_type"]) }}</dd></div>
+      <div><dt>{{ _('session.analysis_mode', 'Analysis mode') }}</dt><dd>{{ tr(session["analysis_mode"], _('common.not_selected', 'Not selected')) }}</dd></div>
+      <div><dt>{{ _('common.created', 'Created') }}</dt><dd>{{ session["created_at"] }}</dd></div>
+      <div><dt>{{ _('common.started', 'Started') }}</dt><dd>{{ session["started_at"] or _('common.not_started', 'Not started') }}</dd></div>
+      <div><dt>{{ _('common.finished', 'Finished') }}</dt><dd>{{ session["ended_at"] or _('common.not_finished', 'Not finished') }}</dd></div>
+      <div>
+        <dt>{{ _('common.duration', 'Duration') }}</dt>
+        {% set duration = session["video_duration_seconds"] if session["video_duration_seconds"] is not none else session["duration_seconds"] %}
+        <dd>{{ "%.1f seconds"|format(duration) if duration is not none else "--" }}</dd>
+      </div>
+    </dl>
+  </article>
+
+  <article class="panel">
+    <h2>{{ _('session.metadata', 'Video Metadata') }}</h2>
+    <dl class="detail-list">
+      <div><dt>{{ _('session.original_filename', 'Original filename') }}</dt><dd>{{ session["original_video_filename"] or _('common.none', 'None') }}</dd></div>
+      <div><dt>{{ _('session.saved_path', 'Saved path') }}</dt><dd class="path">{{ session["saved_video_path"] or _('common.none', 'No saved video file') }}</dd></div>
+      <div><dt>{{ _('session.file_size', 'File size') }}</dt><dd>{{ session["file_size_bytes"] or 0 }} bytes</dd></div>
+      <div><dt>FPS</dt><dd>{{ "%.2f"|format(session["video_fps"]) if session["video_fps"] is not none else "--" }}</dd></div>
+      <div><dt>{{ _('session.frame_count', 'Frame count') }}</dt><dd>{{ session["video_frame_count"] if session["video_frame_count"] is not none else "--" }}</dd></div>
+      <div><dt>{{ _('session.resolution', 'Resolution') }}</dt><dd>{{ session["video_width"] ~ " x " ~ session["video_height"] if session["video_width"] and session["video_height"] else "--" }}</dd></div>
+      <div><dt>{{ _('session.processed_frames', 'Processed frames') }}</dt><dd>{{ session["processed_frame_count"] or 0 }}</dd></div>
+    </dl>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="section-header">
+    <h2>{{ _('session.evaluation_summary', 'Evaluation Summary') }}</h2>
+    <a href="{{ url_for('evaluation_page') }}">{{ _('session.open_evaluation', 'Open Evaluation') }}</a>
+  </div>
+  <div class="breakdown-grid">
+    <div class="breakdown-item">
+      <span>{{ _('session.processed_frames', 'Processed Frames') }}</span>
+      <strong>{{ session["processed_frame_count"] or 0 }}</strong>
+    </div>
+    <div class="breakdown-item">
+      <span>{{ _('common.duration', 'Duration') }}</span>
+      <strong>{{ "%.1fs"|format(evaluation_summary["duration"]) if evaluation_summary["duration"] is not none else "--" }}</strong>
+    </div>
+    <div class="breakdown-item">
+      <span>{{ _('session.approx_fps', 'Approx Processing FPS') }}</span>
+      <strong>{{ "%.2f"|format(evaluation_summary["approximate_processing_fps"]) if evaluation_summary["approximate_processing_fps"] is not none else "--" }}</strong>
+    </div>
+    <div class="breakdown-item">
+      <span>{{ _('session.face_detection_rate', 'Face Detection Rate') }}</span>
+      <strong>{{ "%.0f%%"|format(evaluation_summary["face_detection_rate"] * 100) if evaluation_summary["face_detection_rate"] is not none else "--" }}</strong>
+    </div>
+  </div>
+  <div class="detail-list">
+    <div>
+      <dt>{{ _('session.event_counts', 'Event counts by type') }}</dt>
+      <dd>
+        {{ tr('eye_closure') }} {{ evaluation_summary["event_counts"]["eye_closure"] }},
+        {{ tr('yawn') }} {{ evaluation_summary["event_counts"]["yawn"] }},
+        {{ tr('phone_usage') }} {{ evaluation_summary["event_counts"]["phone_usage"] }},
+        {{ tr('phone_call') }} {{ evaluation_summary["event_counts"]["phone_call"] }},
+        {{ tr('talking_to_passenger') }} {{ evaluation_summary["event_counts"]["talking_to_passenger"] }},
+        {{ tr('looking_away') }} {{ evaluation_summary["event_counts"]["looking_away"] }},
+        {{ tr('head_down') }} {{ evaluation_summary["event_counts"]["head_down"] }},
+        {{ tr('mixed_risk') }} {{ evaluation_summary["event_counts"]["mixed_risk"] }},
+        {{ tr('face_missing') }} {{ evaluation_summary["event_counts"]["face_missing"] }}
+      </dd>
+    </div>
+    <div>
+      <dt>{{ _('session.dominant_risk', 'Dominant risk factor') }}</dt>
+      <dd>{{ tr(evaluation_summary["dominant_risk_factor"], "--") }}</dd>
+    </div>
+    <div>
+      <dt>{{ _('session.limitations', 'Known limitations / warnings') }}</dt>
+      <dd>
+        {% if evaluation_summary["warnings"] %}
+          {{ evaluation_summary["warnings"]|join(" | ") }}
+        {% else %}
+          {{ _('session.no_warnings', 'None recorded for the multimodal workflow.') }}
+        {% endif %}
+      </dd>
+    </div>
+  </div>
+</section>
+
+<section class="two-column">
+  <article class="panel">
+    <h2>{{ _('session.multimodal_model', 'Multimodal Model') }}</h2>
+    <dl class="detail-list">
+      <div><dt>{{ _('session.model_backend', 'Backend') }}</dt><dd>{{ session["multimodal_model_backend"] or "--" }}</dd></div>
+      <div><dt>{{ _('session.model_path', 'Model path') }}</dt><dd class="path">{{ session["multimodal_model_path"] or "--" }}</dd></div>
+      <div><dt>{{ _('session.clip_windows', 'Clip windows') }}</dt><dd>{{ session["multimodal_clip_count"] or 0 }}</dd></div>
+      <div><dt>{{ _('session.audio_track', 'Audio track') }}</dt><dd>{{ _('common.yes', 'Yes') if session["audio_track_detected"] else _('common.no', 'No') }}</dd></div>
+      <div><dt>{{ _('session.skeleton_frames', 'Skeleton frames') }}</dt><dd>{{ session["skeleton_frame_count"] or 0 }}</dd></div>
+    </dl>
+  </article>
+
+  <article class="panel">
+    <h2>{{ _('session.input_modalities', 'Các đầu vào multimodal') }}</h2>
+    <div class="status-grid compact-states">
+      <div>
+        <dt>{{ _('session.video_input', 'Video') }}</dt>
+        <dd>{{ _('session.detected', 'Đã phát hiện') if session["video_frame_count"] else _('session.not_detected', 'Chưa phát hiện') }}</dd>
+      </div>
+      <div>
+        <dt>{{ _('session.audio_input', 'Âm thanh') }}</dt>
+        <dd>{{ _('session.detected', 'Đã phát hiện') if session["audio_track_detected"] else _('session.not_detected', 'Chưa phát hiện') }}</dd>
+      </div>
+      <div>
+        <dt>{{ _('session.skeleton_input', 'Khung xương') }}</dt>
+        <dd>{{ session["skeleton_frame_count"] or 0 }} {{ _('session.sampled_frames', 'Khung mẫu') }}</dd>
+      </div>
+      <div>
+        <dt>{{ _('session.clip_count', 'Số clip') }}</dt>
+        <dd>{{ session["multimodal_clip_count"] or 0 }}</dd>
+      </div>
+    </div>
+    <div class="detail-list" style="margin-top: 16px;">
+      <div><dt>{{ _('session.analysis_mode', 'Analysis mode') }}</dt><dd>{{ tr(session["analysis_mode"], _('common.not_selected', 'Not selected')) }}</dd></div>
+      <div><dt>{{ _('session.warning', 'Warning') }}</dt><dd>{{ session["phone_detection_error"] or _('common.none', 'None') }}</dd></div>
+    </div>
+  </article>
+</section>
+
+<section class="panel">
+  <h2>{{ _('session.risk_breakdown', 'Risk Breakdown') }}</h2>
+  {% if risk_breakdown %}
+    <div class="breakdown-grid">
+      {% for category, value in risk_breakdown.items() %}
+      <div class="breakdown-item">
+        <span>{{ tr(category) }}</span>
+        <strong>{{ "%.1f"|format(value) }}%</strong>
+        <div class="bar"><span style="width: {{ value }}%"></span></div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">{{ _('session.no_risk_breakdown', 'No risk breakdown is available yet.') }}</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>{{ _('session.event_timeline', 'Event Timeline') }}</h2>
+  {% if events %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ _('common.type', 'Type') }}</th>
+            <th>{{ _('common.severity', 'Severity') }}</th>
+            <th>{{ _('common.start', 'Start') }}</th>
+            <th>{{ _('common.end', 'End') }}</th>
+            <th>{{ _('common.duration', 'Duration') }}</th>
+            <th>{{ _('common.confidence', 'Confidence') }}</th>
+            <th>{{ _('common.risk', 'Risk') }}</th>
+            <th>{{ _('common.evidence', 'Evidence') }}</th>
+            <th>{{ _('common.explanation', 'Explanation') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in events %}
+          <tr>
+            <td>{{ tr(event["event_type"]) }}</td>
+            <td><span class="badge {{ 'badge-danger' if event['severity'] in ['high', 'critical'] else ('badge-warning' if event['severity'] == 'medium' else 'badge-success') }}">{{ tr(event["severity"]) }}</span></td>
+            <td>{{ "%.1fs"|format(event["start_time_seconds"]) }}</td>
+            <td>{{ "%.1fs"|format(event["end_time_seconds"]) }}</td>
+            <td>{{ "%.1fs"|format(event["duration_seconds"]) }}</td>
+            <td>{{ "%.0f%%"|format((event["confidence"] or 0) * 100) }}</td>
+            <td>{{ "%.1f"|format(event["risk_contribution"] or 0) }}</td>
+            <td>
+              {% if event["evidence_image_path"] %}
+                <a href="{{ url_for('evidence_image', filename=event['evidence_image_path'].replace('uploads/evidence/', '')) }}">
+                  <img class="evidence-thumb" src="{{ url_for('evidence_image', filename=event['evidence_image_path'].replace('uploads/evidence/', '')) }}" alt="Evidence snapshot for {{ event['event_type'] }}">
+                </a>
+              {% else %}
+                <span class="muted">--</span>
+              {% endif %}
+            </td>
+            <td>{{ rt(event["explanation"]) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">{{ _('session.no_events', 'No events have been generated yet. Run multimodal analysis to populate the timeline.') }}</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>{{ _('common.report', 'Report') }}</h2>
+  {% if report %}
+    <div class="report-header">
+      <div>
+        <h3>{{ rt(report["title"]) }}</h3>
+        <p class="muted">{{ _('session.generated', 'Generated') }} {{ report["generated_at"] or _('session.recently', 'recently') }}. {{ _('common.status', 'Status') }}: {{ tr(report["status"]) }}.</p>
+      </div>
+      <a class="button secondary" href="{{ url_for('reports') }}">{{ _('session.report_page', 'Reports Page') }}</a>
+    </div>
+    <p>{{ rt(report["summary"]) }}</p>
+    <div class="report-grid">
+      <div>
+        <h3>{{ _('session.safety_explanation', 'Safety Score Explanation') }}</h3>
+        <p>{{ rt(report["safety_score_explanation"]) }}</p>
+      </div>
+      <div>
+        <h3>{{ _('session.fatigue_trend', 'Fatigue Trend') }}</h3>
+        <p>{{ rt(report["fatigue_forecast_explanation"]) }}</p>
+      </div>
+    </div>
+    <h3>{{ _('session.major_risk_factors', 'Major Risk Factors') }}</h3>
+    <pre class="report-block">{{ rt(report["key_risk_explanation"]) }}</pre>
+    <h3>{{ _('session.timeline_summary', 'Timeline Summary') }}</h3>
+    <pre class="report-block">{{ rt(report["timeline_summary"]) }}</pre>
+    <h3>{{ _('session.recommendations', 'Recommendations') }}</h3>
+    <pre class="report-block">{{ rt(report["recommendations"]) }}</pre>
+    <h3>{{ _('session.limitations', 'Limitations') }}</h3>
+    <p>{{ rt(report["limitations"]) }}</p>
+  {% else %}
+    <p class="muted">{{ _('session.no_report', 'No report is available yet. Run multimodal analysis to generate one.') }}</p>
+  {% endif %}
+</section>
+{% endblock %}
