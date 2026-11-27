@@ -1,4 +1,5 @@
 import json
+import time
 
 from flask import current_app, flash, g, redirect, url_for
 
@@ -13,6 +14,12 @@ from .settings import get_analysis_settings
 from .yolo_phone_analysis import analyze_video_for_phone
 from .ai.detectors import DetectorFactory
 from .i18n import translate
+from .repositories import (
+    create_inference_run,
+    create_session_model,
+    finish_inference_run,
+    get_model_artifact_id,
+)
 
 
 def _severity_for_duration(event_type, duration):
@@ -318,6 +325,27 @@ def register_analysis_routes(app):
 
         video_path = Path(current_app.root_path).parent / session["saved_video_path"]
         model_config = config_from_app(current_app)
+        input_asset = db.execute(
+            """
+            SELECT id
+            FROM media_assets
+            WHERE session_id = ? AND asset_type = 'uploaded_video'
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (session_id,),
+        ).fetchone()
+        model_artifact_id = get_model_artifact_id(model_config.backend) or get_model_artifact_id("driver_safety_v1.drowsiness")
+        run_started = time.monotonic()
+        inference_run_id = create_inference_run(
+            user_id=g.user["id"],
+            driver_id=session["driver_id"],
+            session_id=session_id,
+            run_type="uploaded_video_analysis",
+            model_backend=model_config.backend,
+            model_artifact_id=model_artifact_id,
+            input_asset_id=input_asset["id"] if input_asset else None,
+        )
         db.execute(
             """
             UPDATE sessions
@@ -371,6 +399,13 @@ def register_analysis_routes(app):
                 ),
             )
             db.commit()
+            finish_inference_run(
+                inference_run_id,
+                status="failed",
+                started_monotonic=run_started,
+                error=error,
+            )
+            db.commit()
             flash(error, "error")
             return redirect(url_for("session_detail", session_id=session_id))
 
@@ -383,6 +418,23 @@ def register_analysis_routes(app):
         summary, logs = summarize_session(session_id, result.events, duration)
         report = generate_report(session, result.events, summary, analysis_mode="multimodal")
         _persist_analysis_results(db, session, result.events, metrics, summary, logs, report, "multimodal")
+        create_session_model(
+            session_id=session_id,
+            model_backend=model_config.backend,
+            model_role="uploaded_behavior_analysis",
+            model_artifact_id=model_artifact_id,
+            metadata={"clip_count": metrics.get("multimodal_clip_count", 0)},
+        )
+        finish_inference_run(
+            inference_run_id,
+            status="completed",
+            started_monotonic=run_started,
+            summary={
+                "events": len(result.events),
+                "processed_frame_count": metrics.get("processed_frame_count", 0),
+                "average_processing_fps": metrics.get("average_processing_fps"),
+            },
+        )
         db.commit()
         flash(translate("flash.multimodal_done", "Multimodal video-audio-skeleton analysis completed."), "success")
         return redirect(url_for("session_detail", session_id=session_id))

@@ -23,6 +23,23 @@ models/*.zip
 
 tmp_*
 *.log
+debug.txt
+grammar_issues.txt
+replacement_log.txt
+replacement_wording_log.txt
+
+# Local report drafting scratch files.
+docs/overleaf_report_package/main_all*.txt
+docs/overleaf_report_package/main_p2.txt
+docs/overleaf_report_package/page2.txt
+docs/overleaf_report_package/pages*.txt
+docs/overleaf_report_package/temp_*.txt
+docs/overleaf_report_package/main_new.tex
+docs/overleaf_report_package/main_highlighted.tex
+docs/overleaf_report_package/overleaf_report_package/
+
+# Unrelated local experiments kept out of the MDDAD handoff.
+tools/car_logo_dataset/
 
 docs/**/*.pptx
 docs/**/*.docx

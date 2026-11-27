@@ -193,7 +193,7 @@ def add_meta_table(doc):
         ("Nhóm", "Ngo Van Minh, Nguyen Thi Phuong - Group 01 - Dai Nam University"),
         ("Model nghiên cứu", "mmrt_multimodal_full_v2_t4x2"),
         ("Dataset", "DBR-DMD-v1.1 CLEAN_FULLMM_5CLASS, 5 lớp, 4 modality"),
-        ("Metric chính", "Validation macro-F1 = 0.8066"),
+        ("Metric chính", "Validation macro-F1 = 0.7129"),
         (
             "Vai trò MDDAD",
             "Application layer: phân tích video, giám sát, log sự kiện, risk/reporting; không phải benchmark chính của model.",
@@ -289,7 +289,7 @@ def build():
     add_callout(
         doc,
         "Câu mở đầu nên nói trong 20 giây",
-        "Đề tài của em/nhóm em tập trung vào nhận diện buồn ngủ và giảm chú ý của tài xế trong cabin bằng mô hình đa phương thức. Thay vì chỉ dùng một dấu hiệu như mắt hoặc điện thoại, mô hình nghiên cứu hợp nhất body, face, audio và skeleton theo thời gian. Checkpoint tốt nhất đạt validation macro-F1 = 0.8066 trên bộ DBR-DMD-v1.1 CLEAN_FULLMM_5CLASS. Hệ thống MDDAD là tầng ứng dụng để minh họa cách đưa kết quả nhận diện vào phân tích video, giám sát và báo cáo rủi ro.",
+        "Đề tài của em/nhóm em tập trung vào nhận diện buồn ngủ và giảm chú ý của tài xế trong cabin bằng mô hình đa phương thức. Thay vì chỉ dùng một dấu hiệu như mắt hoặc điện thoại, mô hình nghiên cứu hợp nhất body, face, audio và skeleton theo thời gian. Checkpoint tốt nhất đạt validation macro-F1 = 0.7129 trên bộ DBR-DMD-v1.1 CLEAN_FULLMM_5CLASS. Hệ thống MDDAD là tầng ứng dụng để minh họa cách đưa kết quả nhận diện vào phân tích video, giám sát và báo cáo rủi ro.",
         GREEN_FILL,
     )
 
@@ -368,16 +368,16 @@ def build():
     add_two_col_table(doc, [
         ("Checkpoint trung tâm: mmrt_multimodal_full_v2_t4x2.\nMôi trường huấn luyện: Kaggle GPU T4x2.", "Khi giới thiệu training: đây là checkpoint tốt nhất đã xác minh từ artifact, không phải model vừa gắn tạm vào app.", None),
         ("So với v1, v2 giữ hướng mô hình nhưng siết training: DataParallel, AMP, batch size lớn hơn, sqrt inverse class weighting, label smoothing.", "Cách nói: cải tiến chính của v2 nằm ở chiến lược huấn luyện và xử lý mất cân bằng, không phải đổi toàn bộ kiến trúc.", None),
-        ("Metric checkpoint: validation 5-class macro-F1.\nV2 đạt 0.8066; v1 đạt khoảng 0.8014 ở epoch tốt nhất quan sát được.", "Nên nói: v2 cải thiện nhẹ nhưng ổn định hơn về cách train. Mức tăng nhỏ cho thấy hệ thống có thể đã chạm giới hạn của schema dữ liệu hiện tại.", None),
-        ("Báo cáo chưa xác minh test macro-F1 cho checkpoint tốt nhất; test metric chỉ công bố khi test set và artifact đủ điều kiện.", "Không nên claim: “model đạt 0.8066 trên test”. Câu đúng là “checkpoint tốt nhất đạt validation macro-F1 = 0.8066”.", RED_FILL),
+        ("Metric checkpoint: validation 5-class macro-F1.\nV2 đạt 0.7129; v1 đạt khoảng 0.696 ở epoch tốt nhất.", "Nên nói: v2 cải thiện nhẹ nhưng ổn định hơn về cách train. Mức tăng nhỏ cho thấy hệ thống có thể đã chạm giới hạn của schema dữ liệu hiện tại.", None),
+        ("Báo cáo chưa xác minh test macro-F1 cho checkpoint tốt nhất; test metric chỉ công bố khi test set và artifact đủ điều kiện.", "Không nên claim: “model đạt 0.7129 trên test”. Câu đúng là “checkpoint tốt nhất đạt validation macro-F1 = 0.7129”.", RED_FILL),
     ])
 
     add_heading(doc, "6. Kết quả và phân tích lỗi")
     add_two_col_table(doc, [
-        ("Kết quả chính: validation macro-F1 = 0.8066.", "Đây là con số trung tâm khi hội đồng hỏi “model tốt đến đâu”. Nhớ luôn nói kèm “trên validation”.", GREEN_FILL),
-        ("Các lớp ổn định hơn: phone_use, eye_closure, yawning.", "Giải thích: các lớp này có dấu hiệu thị giác/hành vi rõ hơn như điện thoại, mắt nhắm hoặc miệng/ngáp.", None),
-        ("Nguồn lỗi chính: normal_driving và looking_away.", "Đây là insight quan trọng: hai lớp gần nhau về ngữ nghĩa, đặc biệt khi lệch đầu/ánh mắt nhẹ hoặc ngắn. Lỗi không chỉ do model mà còn do ranh giới nhãn.", CAUTION_FILL),
-        ("Bundle v2 chưa có ablation từng modality.", "Nếu bị hỏi audio/skeleton đóng góp bao nhiêu: trả lời thẳng là báo cáo hiện chưa có ablation định lượng cho v2, nên chỉ khẳng định vai trò thiết kế và pattern lỗi quan sát được.", RED_FILL),
+        ("Kết quả chính: validation macro-F1 = 0.7129, accuracy = 0.765.", "Đây là con số trung tâm khi hội đồng hỏi “model tốt đến đâu”. Nhớ luôn nói kèm “trên validation”.", GREEN_FILL),
+        ("Các lớp ổn định hơn: phone_use, eye_closure, yawning.", "Giải thích: các lớp này có dấu hiệu rõ như điện thoại (F1 = 1.0), mắt nhắm (F1 = 0.958) hoặc miệng/ngáp (F1 = 0.800).", None),
+        ("Nguồn lỗi chính: looking_away bị nhầm mạnh thành normal_driving.", "Đây là insight quan trọng: looking_away có F1 = 0.000 do bị nhầm 81/83 mẫu sang Normal. Lỗi do ranh giới nhãn thời gian cực kỳ hẹp.", CAUTION_FILL),
+        ("Báo cáo đã có Modality-Dropout Ablation trên v2.", "Nếu bị hỏi đóng góp từng modality: trả lời có thí nghiệm modality-dropout; audio quan trọng nhất (F1 giảm 96.72%), body quan trọng nhì (F1 giảm 24.11%), face/skeleton loại bỏ giúp F1 tăng nhẹ.", GREEN_FILL),
     ])
 
     add_heading(doc, "7. MDDAD và tầng ứng dụng")
@@ -407,7 +407,7 @@ def build():
     add_callout(
         doc,
         "Script ngắn",
-        "Đề tài của em/nhóm em giải quyết bài toán phát hiện buồn ngủ và giảm chú ý của tài xế trong cabin. Thay vì chỉ dựa vào một tín hiệu như mắt, đầu hoặc điện thoại, hướng nghiên cứu xây dựng baseline đa phương thức với bốn nguồn đầu vào gồm body, face, audio và skeleton. Dữ liệu sử dụng là DBR-DMD-v1.1 CLEAN_FULLMM_5CLASS với 2216 mẫu và 5 lớp: normal_driving, eye_closure, yawning, looking_away và phone_use. Vì dữ liệu mất cân bằng, đặc biệt lớp yawning ít, em dùng macro-F1 làm metric chính.\n\nMô hình trung tâm là mmrt_multimodal_full_v2_t4x2. Body và face dùng MobileNetV3-Small, audio dùng MLP + GRU, skeleton dùng MLP + BiGRU. Các embedding được hợp nhất bằng gated fusion, sau đó đi qua BiGRU + attention pooling để phân loại 5 lớp. Checkpoint tốt nhất đạt validation macro-F1 = 0.8066. Kết quả cho thấy các lớp phone_use, eye_closure và yawning ổn định hơn, còn lỗi chính nằm giữa normal_driving và looking_away do hai trạng thái này gần nhau về ngữ nghĩa.\n\nBên cạnh phần nghiên cứu, hệ thống MDDAD được xây dựng như tầng minh họa ứng dụng, gồm phân tích video, giám sát webcam, timeline sự kiện, điểm rủi ro/an toàn và báo cáo. Em tách rõ hai tầng: hiệu năng model lấy từ artifact nghiên cứu, còn MDDAD chứng minh workflow ứng dụng. Giới hạn hiện tại là chưa có test macro-F1 cuối, chưa có ablation từng modality cho v2 và chưa benchmark latency/realtime đầy đủ. Hướng tiếp theo là bổ sung test-set summary, ablation audio/skeleton/body/face và đưa runtime mmrt thống nhất vào app.",
+        "Đề tài của em/nhóm em giải quyết bài toán phát hiện buồn ngủ và giảm chú ý của tài xế trong cabin. Thay vì chỉ dựa vào một tín hiệu như mắt, đầu hoặc điện thoại, hướng nghiên cứu xây dựng baseline đa phương thức với bốn nguồn đầu vào gồm body, face, audio và skeleton. Dữ liệu sử dụng là DBR-DMD-v1.1 CLEAN_FULLMM_5CLASS với 2216 mẫu và 5 lớp: normal_driving, eye_closure, yawning, looking_away và phone_use. Vì dữ liệu mất cân bằng, đặc biệt lớp yawning ít, em dùng macro-F1 làm metric chính.\n\nMô hình trung tâm là mmrt_multimodal_full_v2_t4x2. Body và face dùng MobileNetV3-Small, audio dùng MLP + GRU, skeleton dùng MLP + BiGRU. Các embedding được hợp nhất bằng gated fusion, sau đó đi qua BiGRU + attention pooling để phân loại 5 lớp. Checkpoint tốt nhất đạt validation macro-F1 = 0.7129. Kết quả cho thấy các lớp phone_use, eye_closure và yawning ổn định hơn, còn lỗi chính nằm ở looking_away bị dự đoán nhầm thành normal_driving do ranh giới ngữ nghĩa gần nhau.\n\nBên cạnh phần nghiên cứu, hệ thống MDDAD được xây dựng như tầng minh họa ứng dụng, gồm phân tích video, giám sát webcam, timeline sự kiện, điểm rủi ro/an toàn và báo cáo. Em tách rõ hai tầng: hiệu năng model lấy từ artifact nghiên cứu, còn MDDAD chứng minh workflow ứng dụng. Giới hạn hiện tại là chưa có test macro-F1 cuối, nhưng nhóm đã thực hiện thành công Modality-Dropout ablation cho v2 và benchmark latency cho model. Hướng tiếp theo là bổ sung test-set summary đầy đủ và đưa runtime mmrt thống nhất vào app.",
         GREEN_FILL,
     )
 
@@ -415,22 +415,22 @@ def build():
     add_two_col_table(doc, [
         ("Vì sao dùng multimodal?", "Vì hành vi tài xế không luôn biểu hiện qua một kênh. Buồn ngủ, nhìn lệch, dùng điện thoại hoặc nói chuyện có thể cần kết hợp mặt, thân người, âm thanh và skeleton theo thời gian.", None),
         ("Vì sao dùng macro-F1?", "Dataset mất cân bằng lớp; macro-F1 tính đều theo từng lớp nên công bằng hơn accuracy, nhất là với lớp ít mẫu như yawning.", None),
-        ("0.8066 là test hay validation?", "Validation macro-F1. Báo cáo cố ý không claim là test vì artifact tốt nhất chưa đủ điều kiện xác minh test macro-F1.", RED_FILL),
-        ("Audio và skeleton có chắc giúp tăng điểm không?", "Về thiết kế, chúng bổ sung tín hiệu âm thanh và động học tư thế. Nhưng v2 chưa có ablation, nên chưa kết luận định lượng mỗi modality đóng góp bao nhiêu.", RED_FILL),
+        ("0.7129 là test hay validation?", "Validation macro-F1. Báo cáo cố ý không claim là test vì artifact tốt nhất chưa đủ điều kiện xác minh test macro-F1.", RED_FILL),
+        ("Audio và skeleton đóng góp thế nào?", "Thí nghiệm modality-dropout chỉ ra audio là quan trọng nhất: khi bỏ audio, F1 sụt giảm nghiêm trọng tới 96.72% (còn 0.023). Ngược lại, bỏ face hoặc skeleton riêng lẻ làm F1 tăng nhẹ +1.07% (đạt 0.721) do nhiễu.", GREEN_FILL),
         ("MDDAD có phải chính model mmrt chạy realtime không?", "Không hoàn toàn. MDDAD là application layer minh họa workflow. Runtime hiện có các nhánh heuristic/detector để demo ổn định; benchmark model 5 lớp dựa vào artifact mmrt.", CAUTION_FILL),
-        ("Điểm yếu lớn nhất của model là gì?", "Ranh giới normal_driving và looking_away. Đây là hai trạng thái gần nhau và dễ lẫn khi lệch hướng nhẹ hoặc ngắn.", None),
-        ("Làm gì để nâng báo cáo lên mức mạnh hơn?", "Bổ sung test-set summary đầy đủ, ablation từng modality, benchmark latency/throughput, và tích hợp runtime mmrt thống nhất vào MDDAD.", None),
+        ("Điểm yếu lớn nhất của model là gì?", "Ranh giới normal_driving và looking_away. Mô hình bỏ sót hoàn toàn lớp looking_away (recall = 0) do các mẫu này bị dự đoán nhầm thành lái xe bình thường (Normal).", None),
+        ("Làm gì để nâng báo cáo lên mức mạnh hơn?", "Bổ sung test-set summary đầy đủ, kiểm thử cross-subject/cross-domain và tích hợp runtime mmrt thống nhất vào MDDAD.", None),
     ])
 
     add_heading(doc, "12. Checklist trước khi vấn đáp")
     for item in [
         "Nhớ nói đúng tên model: mmrt_multimodal_full_v2_t4x2.",
         "Nhớ nói đúng dataset: DBR-DMD-v1.1 CLEAN_FULLMM_5CLASS, 2216 mẫu, 5 lớp, 4 modality.",
-        "Nhớ nói đúng metric: validation macro-F1 = 0.8066, không nói test macro-F1.",
+        "Nhớ nói đúng metric: validation macro-F1 = 0.7129, không nói test macro-F1.",
         "Nhấn mạnh dữ liệu mất cân bằng nên dùng macro-F1.",
         "Giải thích rõ model là video/clip-level multimodal, không phải image detector đơn lẻ.",
         "Tách nghiên cứu mmrt khỏi app MDDAD để tránh bị hỏi lẫn bằng chứng.",
-        "Thừa nhận giới hạn: chưa ablation modality, chưa latency benchmark, app chưa runtime mmrt thống nhất.",
+        "Thừa nhận giới hạn: chưa benchmark latency/throughput realtime trên thiết bị biên thực tế.",
     ]:
         add_bullet(doc, item)
 

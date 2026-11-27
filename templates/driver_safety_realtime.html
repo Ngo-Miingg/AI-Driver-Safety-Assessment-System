@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Driver Safety v1{% endblock %}
+{% block page_shell_class %}page-content-wide driver-safety-page{% endblock %}
+
+{% block content %}
+<section
+  class="driver-safety-console"
+  data-feed-url="{{ url_for('realtime_feed') }}"
+  data-phone-backend="{{ selected_phone_backend }}"
+>
+  <header class="driver-safety-header-v2 panel compact">
+    <div>
+      <p class="realtime-kicker">DRIVER SAFETY V1</p>
+      <h2>{{ _('driver_v1.title', 'Realtime drowsiness monitoring') }}</h2>
+      <p class="muted">{{ _('driver_v1.subtitle', 'Face verification, temporal drowsiness inference, phone warning, and 16-frame driver action recognition.') }}</p>
+    </div>
+    <div class="button-row">
+      <a class="button secondary" href="{{ url_for('dashboard') }}">{{ _('nav.dashboard', 'Dashboard') }}</a>
+      <a class="button secondary" href="{{ url_for('history') }}">{{ _('nav.history', 'History') }}</a>
+    </div>
+  </header>
+
+  {% if not active_driver %}
+    <section class="panel">
+      <p>{{ _('driver_v1.select_driver_hint', 'Select an active driver before starting monitoring.') }}</p>
+      <a class="button primary" href="{{ url_for('drivers') }}">{{ _('driver_v1.select_driver', 'Select driver') }}</a>
+    </section>
+  {% else %}
+  <section class="driver-safety-commandbar panel compact">
+    <div class="driver-safety-operator">
+      <span class="realtime-label">{{ _('driver_v1.active_driver', 'ACTIVE DRIVER') }}</span>
+      <strong>{{ active_driver['display_name'] }}</strong>
+      <span id="connection-state" class="badge badge-warning">{{ _('driver_v1.not_connected', 'Not connected') }}</span>
+      <span id="live-status" class="badge badge-neutral">{{ _('driver_v1.waiting', 'Waiting') }}</span>
+    </div>
+    <div class="button-row">
+      <button id="driver-safety-start" class="button primary" type="button">{{ _('driver_v1.start', 'Start monitoring') }}</button>
+      <button id="driver-safety-stop" class="button secondary" type="button" disabled>{{ _('driver_v1.stop', 'Stop monitoring') }}</button>
+      <a class="button secondary" href="{{ url_for('debug_camera') }}">{{ _('driver_v1.check_camera', 'Check camera') }}</a>
+      <a id="session-link" class="button secondary hidden" href="#">{{ _('driver_v1.open_session', 'Open saved session') }}</a>
+    </div>
+  </section>
+  <p id="driver-safety-error" class="flash error hidden"></p>
+
+  <section class="driver-safety-stage-grid">
+    <article class="panel driver-safety-stage-panel">
+      <div class="driver-safety-stage-head">
+        <div>
+          <h3>{{ _('driver_v1.live_camera', 'Live camera') }}</h3>
+          <p class="muted">{{ _('driver_v1.safety_rule_detail', 'The model classifies at P > 0.50. A warning is logged only when P > 0.70 remains continuous for 3 seconds.') }}</p>
+        </div>
+        <div class="driver-safety-live-badges">
+          <span class="badge badge-neutral" id="model-ready">--</span>
+          <span class="badge badge-neutral" id="face-state-pill">--</span>
+        </div>
+      </div>
+      <div class="driver-safety-video-frame-v2">
+        <p id="camera-placeholder" class="muted">{{ _('driver_v1.camera_hint', 'The camera opens only after monitoring starts.') }}</p>
+        <img id="driver-safety-feed" alt="{{ _('driver_v1.live_camera', 'Live camera') }}">
+      </div>
+
+      <div class="driver-safety-stage-strip">
+        <article class="driver-safety-stage-stat">
+          <span>{{ _('driver_v1.frames', 'Frames') }}</span>
+          <strong id="frame-count">--</strong>
+        </article>
+        <article class="driver-safety-stage-stat">
+          <span>{{ _('driver_v1.events', 'Events') }}</span>
+          <strong id="event-count">0</strong>
+        </article>
+        <article class="driver-safety-stage-stat">
+          <span>{{ _('driver_v1.risk', 'Live risk') }}</span>
+          <strong id="risk-score">--</strong>
+        </article>
+        <article class="driver-safety-stage-stat">
+          <span>{{ _('driver_v1.alert', 'Alert') }}</span>
+          <strong id="alert-level">--</strong>
+        </article>
+      </div>
+    </article>
+
+    <aside class="driver-safety-observe-panel">
+      <section class="panel compact driver-safety-observe-card">
+        <div class="section-header">
+          <h3>{{ _('driver_v1.model_state', 'Pipeline status') }}</h3>
+        </div>
+        <div class="driver-safety-observe-grid">
+          <article class="driver-safety-observe-item" id="card-face-state">
+            <span>{{ _('driver_v1.face_detection', 'Face detection') }}</span>
+            <strong id="face-state">--</strong>
+          </article>
+          <article class="driver-safety-observe-item" id="card-mesh-state">
+            <span>{{ _('driver_v1.face_features', 'Face Mesh and features') }}</span>
+            <strong id="mesh-state">--</strong>
+          </article>
+          <article class="driver-safety-observe-item" id="card-yawning-state">
+            <span>{{ _('driver_v1.yawning', 'Yawning') }}</span>
+            <strong id="yawning-state">--</strong>
+          </article>
+          <article class="driver-safety-observe-item" id="card-looking-away-state">
+            <span>{{ _('driver_v1.looking_away', 'Looking away') }}</span>
+            <strong id="looking-away-state">{{ _('common.no', 'No') }}</strong>
+          </article>
+          <article class="driver-safety-observe-item" id="card-head-down-state">
+            <span>{{ _('driver_v1.head_down', 'Head down') }}</span>
+            <strong id="head-down-state">--</strong>
+          </article>
+          <article class="driver-safety-observe-item" id="card-driver-action-state">
+            <span>{{ _('driver_v1.driver_action', 'Driver action') }}</span>
+            <strong id="driver-action-state">--</strong>
+          </article>
+          <article class="driver-safety-observe-item" id="card-buffer-state">
+            <span>{{ _('driver_v1.buffer', 'Temporal buffer') }}</span>
+            <strong id="buffer-state">0 / {{ config.DRIVER_SAFETY_SEQUENCE_LENGTH }}</strong>
+          </article>
+          <article class="driver-safety-observe-item" id="card-action-buffer-state">
+            <span>{{ _('driver_v1.action_buffer', 'Action clip buffer') }}</span>
+            <strong id="action-buffer-state">0 / {{ config.DRIVER_ACTION_WINDOW_SIZE }}</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel compact driver-safety-probability-card-v2">
+        <div class="section-header">
+          <h3>{{ _('driver_v1.probability', 'DROWSINESS PROBABILITY') }}</h3>
+          <span id="identity-state" class="badge badge-neutral">{{ _('driver_v1.identity_pending', 'Not integrated into runtime') }}</span>
+        </div>
+        <strong id="drowsiness-probability">--</strong>
+        <div class="driver-safety-meter"><span id="drowsiness-meter"></span></div>
+        <p id="drowsiness-decision" class="muted">{{ _('driver_v1.collecting', 'Collecting a 15-frame sequence.') }}</p>
+      </section>
+
+      <section class="panel compact driver-action-probability-card-v2">
+        <div class="section-header">
+          <h3>{{ _('driver_v1.action_probabilities_diagnostic', 'Raw action probabilities (diagnostic)') }}</h3>
+          <span class="badge badge-neutral">7 logical classes</span>
+        </div>
+        <div id="driver-action-probabilities" class="driver-action-probabilities">
+          <p class="muted">{{ _('driver_v1.action_collecting', 'Collecting a 16-frame clip.') }}</p>
+        </div>
+      </section>
+    </aside>
+  </section>
+
+  <section class="driver-safety-bottom-grid">
+    <section class="panel compact">
+      <div class="section-header">
+        <h3>{{ _('driver_v1.confirmed_events', 'Confirmed events') }}</h3>
+      </div>
+      <div id="driver-safety-events" class="card-list">
+        <p class="muted">{{ _('driver_v1.no_events', 'No confirmed events yet.') }}</p>
+      </div>
+    </section>
+
+    <section class="panel compact">
+      <div class="section-header">
+        <h3>{{ _('driver_v1.artifacts', 'Pipeline artifacts') }}</h3>
+      </div>
+      <div class="driver-safety-runtime-list">
+        <div><span>{{ _('driver_v1.feature_rate', 'Feature sampling rate') }}</span><strong id="feature-rate">--</strong></div>
+        <div><span>{{ _('driver_v1.window_duration', 'Observed window duration') }}</span><strong id="window-duration">--</strong></div>
+      </div>
+      <div class="driver-safety-artifact-grid compact-artifact-grid">
+        {% for name, item in model_status.models.items() %}
+        <div class="driver-safety-artifact {{ 'is-ready' if item.available else 'is-missing' }}">
+          <strong>{{ {'face_detector': 'YOLO Face Detection', 'face_verifier': 'Face Verification', 'drowsiness_model': 'Temporal BiLSTM', 'scaler': 'StandardScaler', 'action_encoder': 'Action Encoder', 'action_decoder': 'Action Decoder'}[name] if name in {'face_detector': 'YOLO Face Detection', 'face_verifier': 'Face Verification', 'drowsiness_model': 'Temporal BiLSTM', 'scaler': 'StandardScaler', 'action_encoder': 'Action Encoder', 'action_decoder': 'Action Decoder'} else name }}</strong>
+          <span>{{ _('driver_v1.file_present', 'File present') if item.available else _('driver_v1.file_missing', 'Missing artifact') }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if active_driver %}<script src="{{ url_for('static', filename='js/driver_safety_realtime.js') }}?v=20260806-unified-pipeline"></script>{% endif %}
+{% endblock %}

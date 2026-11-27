@@ -297,10 +297,20 @@
           </div>
           <div class="control-row">
             <input id="phone-backend" type="hidden" value="disabled">
-            <div class="stat"><span>Phone use</span><strong>MMRT model</strong></div>
+            <label>
+              Behavior model
+              <select id="behavior-backend">
+                {% for option in behavior_model_options %}
+                <option value="{{ option.value }}" {% if option.value == behavior_backend %}selected{% endif %}>
+                  {{ option.label }}
+                </option>
+                {% endfor %}
+              </select>
+            </label>
             <button type="button" id="start-live" class="primary">Bắt đầu infer</button>
             <button type="button" id="stop-live" disabled>Dừng</button>
           </div>
+          <p class="muted">Phone use is recognized by the selected multimodal behavior model. Standalone phone detectors are disabled here.</p>
           <div class="summary">
             <div class="stat"><span>Trạng thái hành vi</span><strong id="predicted-label">--</strong></div>
             <div class="stat"><span>Độ tin cậy</span><strong id="predicted-confidence">--</strong></div>
@@ -439,6 +449,7 @@
     const socket = window.io ? window.io() : null;
     const currentLanguage = "{{ current_language or 'en' }}";
     const liveFeed = document.getElementById("live-feed");
+    const behaviorBackend = document.getElementById("behavior-backend");
     const phoneBackend = document.getElementById("phone-backend");
     const startButton = document.getElementById("start-live");
     const stopButton = document.getElementById("stop-live");
@@ -658,7 +669,7 @@
       await startAudioCapture();
       socket.emit("set_realtime_language", { language: currentLanguage });
       socket.emit("start_realtime_session", {
-        behavior_model_backend: "mmrt_multimodal_full_v2_t4x2",
+        behavior_model_backend: behaviorBackend ? behaviorBackend.value : "{{ behavior_backend }}",
         phone_detector_backend: "disabled",
         language: currentLanguage,
       });

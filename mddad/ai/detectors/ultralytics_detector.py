@@ -27,6 +27,7 @@ class UltralyticsPhoneDetector(BaseDetector):
             raise RuntimeError(f"Could not load {backend} detector model: {exc}") from exc
 
     def detect_frame(self, frame):
+        frame_height, frame_width = frame.shape[:2]
         try:
             results = self.model.predict(
                 frame,
@@ -47,6 +48,26 @@ class UltralyticsPhoneDetector(BaseDetector):
                 confidence = float(box.conf[0])
                 class_name = str(names.get(class_id, class_id))
                 xyxy = box.xyxy[0].tolist()
+                x1, y1, x2, y2 = [float(value) for value in xyxy]
+                box_width = max(x2 - x1, 0.0)
+                box_height = max(y2 - y1, 0.0)
+                frame_area = max(float(frame_width * frame_height), 1.0)
+                box_area_ratio = (box_width * box_height) / frame_area
+                width_ratio = box_width / max(float(frame_width), 1.0)
+                height_ratio = box_height / max(float(frame_height), 1.0)
+                aspect_ratio = box_width / max(box_height, 1.0)
+
+                # Reject obvious false positives such as boxes covering almost
+                # the entire frame or extremely stretched regions.
+                if (
+                    box_area_ratio >= 0.45
+                    or width_ratio >= 0.82
+                    or height_ratio >= 0.88
+                    or aspect_ratio >= 4.0
+                    or aspect_ratio <= 0.2
+                ):
+                    continue
+
                 detection = Detection(
                     class_name=class_name,
                     confidence=confidence,

@@ -2,17 +2,25 @@ Flask>=3.0,<4.0
 Flask-SocketIO>=5.3,<6.0
 python-dotenv>=1.0,<2.0
 simple-websocket>=1.0,<2.0
+requests>=2.32,<3.0
+# Some optional research dependencies install an unsupported chardet major.
+# Pinning it keeps Requests startup logs clean on the handoff environment.
+chardet>=5.2,<6.0
 
-# Core AI / computer vision dependencies used by upload analysis, realtime monitoring,
-# Activity7 demos, and MMRT v2 multimodal inference.
+# Core AI and computer-vision dependencies used by Driver Safety v1.
 opencv-python>=4.9
-mediapipe>=0.10
+mediapipe==0.10.14
 ultralytics>=8.4.68
 numpy>=1.26
 Pillow>=10.0
 joblib>=1.3
-scikit-learn>=1.4
+h5py>=3.10
+keras>=3.5
+scikit-learn>=1.6.1,<1.7
+tensorflow>=2.16,<2.19
+tf-keras>=2.16,<2.19
 librosa>=0.10
 soundfile>=0.12
 torch>=2.2
 torchvision>=0.17
+openvino>=2026.2

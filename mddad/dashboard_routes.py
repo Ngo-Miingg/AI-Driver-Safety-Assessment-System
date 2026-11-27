@@ -43,7 +43,7 @@ def register_dashboard_routes(app):
         row = db.execute(
             """
             SELECT
-                SUM(CASE WHEN e.event_type IN ('eye_closure', 'yawn') THEN 1 ELSE 0 END) AS drowsiness,
+                SUM(CASE WHEN e.event_type IN ('drowsiness', 'eye_closure', 'yawn') THEN 1 ELSE 0 END) AS drowsiness,
                 SUM(CASE WHEN e.event_type IN ('looking_away', 'head_down', 'face_missing') THEN 1 ELSE 0 END) AS distraction,
                 SUM(CASE WHEN e.event_type = 'phone_usage' THEN 1 ELSE 0 END) AS phone
             FROM events e

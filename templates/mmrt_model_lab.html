@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="{{ current_language or 'vi' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MMRT Model Lab</title>
+  <style>
+    :root{--bg:#eef3f8;--panel:#fff;--line:#d5dfeb;--text:#0f172a;--muted:#52657d;--blue:#2563eb;--green:#0f9d58;--amber:#d97706;--red:#dc2626;--ink:#071321}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}.page{max-width:1760px;margin:0 auto;padding:18px}
+    .topbar{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;margin-bottom:14px}h1,h2,h3,p{margin-top:0}h1{margin-bottom:4px;font-size:30px}h2{margin-bottom:10px;font-size:21px}h3{font-size:16px}.muted{color:var(--muted)}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}.stack{display:grid;gap:14px;min-width:0}.main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(460px,520px);gap:14px;align-items:start}.split{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.85fr);gap:14px;min-width:0}
+    .toolbar{display:grid;grid-template-columns:minmax(260px,1fr) auto auto auto;gap:12px;align-items:end}.button-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}label{display:grid;gap:6px;font-weight:700}
+    button,.button,select,input[type=file]{border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);padding:10px 12px;font-size:15px}button,.button{cursor:pointer;font-weight:700;text-decoration:none;min-height:42px;display:inline-flex;align-items:center;justify-content:center}.primary{background:var(--blue);border-color:var(--blue);color:#fff}button:disabled{opacity:.55;cursor:not-allowed}
+    .feed{aspect-ratio:16/9;background:var(--ink);border:1px solid #1d3147;border-radius:10px;overflow:hidden;display:grid;place-items:center;min-width:0}.feed img,.feed video{width:100%;height:100%;object-fit:cover;display:block;background:var(--ink)}.feed.contain img,.feed.contain video{object-fit:contain}.placeholder{color:#d9e6f7;text-align:center;padding:16px}.hidden{display:none!important}
+    .status-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.stat{min-height:78px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fbfdff}.stat span{display:block;color:var(--muted);font-size:12px;margin-bottom:8px}.stat strong{display:block;font-size:18px;line-height:1.25;word-break:break-word}.good{border-color:#8ad2a5!important;background:#eefaf3!important}.warn{border-color:#f1b889!important;background:#fff7ed!important}.bad{border-color:#f2a7a7!important;background:#fff1f1!important}
+    .badge{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-size:13px;font-weight:700;background:#fff;white-space:nowrap}.badge.good{color:var(--green);border-color:#a9dabd;background:#effaf3}.badge.warn{color:var(--amber);border-color:#efcc94;background:#fff8eb}.badge.bad{color:var(--red);border-color:#eeb0b0;background:#fff1f1}
+    .prob-list{display:grid;gap:9px;min-width:0}.prob-row{display:grid;grid-template-columns:minmax(118px,150px) minmax(0,1fr) 58px;gap:10px;align-items:center;min-width:0}.prob-row strong{min-width:0;overflow:hidden;text-overflow:ellipsis}.bar{height:12px;border-radius:999px;background:#e5edf7;overflow:hidden;border:1px solid #d8e3f2;min-width:0}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#2563eb)}
+    .log{min-height:170px;max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fbfdff}.log-item{padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px}.log-item:last-child{border-bottom:0}.log-item strong{display:block;margin-bottom:4px}.audio-meter{height:14px;border-radius:999px;overflow:hidden;background:#e5edf7;border:1px solid var(--line)}.audio-meter i{display:block;height:100%;width:100%;transform-origin:left center;transform:scaleX(.02);background:linear-gradient(90deg,#10b981,#f59e0b,#ef4444)}
+    table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:9px 7px;border-bottom:1px solid var(--line)}th{color:var(--muted)}.path{font-family:Consolas,monospace;color:var(--muted);word-break:break-all;font-size:12px}.flash{margin:0 0 12px;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:#fff}
+    @media(max-width:1420px){.main-grid{grid-template-columns:1fr}.split{grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr)}}@media(max-width:1100px){.split{grid-template-columns:1fr}.status-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.toolbar{grid-template-columns:1fr}.button-row{justify-content:flex-start}}@media(max-width:720px){.topbar,.status-grid{grid-template-columns:1fr}.prob-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="topbar">
+    <div><h1>MMRT Model Lab</h1><p class="muted">Trang test rieng cho model da phuong thuc: camera, audio, skeleton, raw probabilities va upload video.</p></div>
+    <nav class="button-row"><a class="button" href="{{ url_for('dashboard') }}">Dashboard</a><a class="button" href="{{ url_for('realtime') }}">Realtime cu</a><a class="button" href="{{ url_for('debug_camera') }}">Kiem tra camera</a></nav>
+  </header>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="flash">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+  <section class="panel" style="margin-bottom:14px">
+    <div class="toolbar">
+      <label>Model behavior<select id="behavior-model" name="behavior_model_backend" form="upload-form">{% for option in behavior_model_options %}{% if option.value == "mmrt_multimodal_full_v2_t4x2" %}<option value="{{ option.value }}" selected>{{ option.label }}</option>{% endif %}{% endfor %}</select></label>
+      <button id="start-live" class="primary" type="button">Bat dau live infer</button><button id="stop-live" type="button">Dung live infer</button><span id="socket-badge" class="badge">Chua ket noi</span>
+    </div>
+  </section>
+  <main class="main-grid">
+    <section class="stack">
+      <div class="panel"><div class="split">
+        <div><h2>Camera infer truc tiep</h2><div class="feed contain"><img id="frame-img" alt="Live frame"><div id="frame-empty" class="placeholder">Bam Bat dau live infer de mo camera va chay model.</div></div></div>
+        <div><h2>Output model</h2><div class="status-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="stat" id="stat-label"><span>Top class</span><strong id="top-label">--</strong></div><div class="stat"><span>Confidence</span><strong id="top-confidence">--</strong></div><div class="stat"><span>Risk</span><strong id="risk-score">--</strong></div><div class="stat"><span>Safety</span><strong id="safety-score">--</strong></div><div class="stat"><span>Alert</span><strong id="alert-level">--</strong></div><div class="stat"><span>Temporal streak</span><strong id="temporal-streak">--</strong></div>
+        </div><div style="margin-top:14px"><h3>Raw probabilities</h3><div id="prob-list" class="prob-list"></div></div></div>
+      </div></div>
+      <div class="panel"><h2>Trang thai dau vao modality</h2><div class="status-grid"><div class="stat" id="face-card"><span>Face branch</span><strong id="face-state">Chua co du lieu</strong></div><div class="stat" id="audio-card"><span>Audio branch</span><strong id="audio-state">Chua co du lieu</strong></div><div class="stat" id="skeleton-card"><span>Skeleton branch</span><strong id="skeleton-state">Chua co du lieu</strong></div><div class="stat"><span>Phone use class</span><strong id="phone-state">Chua co du lieu</strong></div><div class="stat"><span>Buffered frames</span><strong id="buffer-count">--</strong></div><div class="stat"><span>Required frames</span><strong id="required-count">--</strong></div></div></div>
+      <div class="split"><div class="panel"><h2>Prediction log</h2><div id="event-log" class="log"><div class="log-item">Chua co prediction. Model can du clip truoc khi infer.</div></div></div><div class="panel"><h2>Debug lab</h2><div id="debug-log" class="log"><div class="log-item">Trang nay dung luong lab rieng, khong ghi DB session/report.</div></div></div></div>
+    </section>
+    <aside class="stack">
+      <div class="panel"><h2>Skeleton preview</h2><div class="feed contain"><img id="skeleton-img" alt="Skeleton"><div id="skeleton-empty" class="placeholder">Skeleton do OpenCV/MediaPipe ve de quan sat, khong thay doi output cua model.</div></div></div>
+      <div class="panel"><h2>Audio monitor</h2><div class="audio-meter"><i id="audio-meter"></i></div><p class="muted" id="audio-rms" style="margin-top:12px">Mic RMS: --</p></div>
+      <div class="panel"><h2>Thong tin model</h2><p><strong>Backend:</strong> <span id="backend-name">{{ behavior_backend }}</span></p><p><strong>Driver:</strong> {{ active_driver["display_name"] if active_driver else "Chua chon tai xe" }}</p><p class="path">{{ model_path }}</p></div>
+      <div class="panel"><h2>Upload video infer</h2><form id="upload-form" method="post" enctype="multipart/form-data"><label>Video input<input id="video-input" type="file" name="video" accept="video/*"></label><button class="primary" type="submit" style="width:100%;margin-top:12px">Run upload infer</button></form><div class="feed" style="margin-top:12px"><video id="video-preview" controls></video><div id="video-empty" class="placeholder">Chon video de xem preview.</div></div></div>
+    </aside>
+  </main>
+  {% if result %}<section class="panel" style="margin-top:14px"><h2>Upload result</h2><div class="status-grid"><div class="stat"><span>Top class</span><strong>{{ result["top_prediction"]["label"] }}</strong></div><div class="stat"><span>Confidence</span><strong>{{ "%.3f"|format(result["top_prediction"]["confidence"]) }}</strong></div><div class="stat"><span>Clip count</span><strong>{{ result["modalities"]["clip_count"] }}</strong></div><div class="stat"><span>Audio</span><strong>{{ "Co" if result["modalities"]["audio"] else "Khong" }}</strong></div><div class="stat"><span>Skeleton frames</span><strong>{{ result["modalities"]["skeleton_frames"] }}</strong></div><div class="stat"><span>Video</span><strong>{{ uploaded_name or result["original_filename"] }}</strong></div></div><div class="split" style="margin-top:14px"><div><h3>Top clip probabilities</h3><div class="prob-list">{% for item in result["top_prediction"].get("probabilities", result["top_prediction"].get("top3", [])) %}<div class="prob-row"><strong>{{ item["class_name"] }}</strong><div class="bar"><i style="width:{{ (item["confidence"]*100)|round(1) }}%"></i></div><span>{{ "%.3f"|format(item["confidence"]) }}</span></div>{% endfor %}</div></div><div><h3>Clip predictions</h3><table><thead><tr><th>Time</th><th>Class</th><th>Conf</th><th>Audio</th><th>Skeleton</th></tr></thead><tbody>{% for item in result["predictions"][:20] %}<tr><td>{{ "%.1f"|format(item["start_seconds"]) }}-{{ "%.1f"|format(item["end_seconds"]) }}s</td><td>{{ item["label"] }}</td><td>{{ "%.3f"|format(item["confidence"]) }}</td><td>{{ "Y" if item["audio_track_detected"] else "N" }}</td><td>{{ item["pose_frame_count"] }}</td></tr>{% endfor %}</tbody></table></div></div></section>{% endif %}
+</div>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script>
+const CLASS_LABELS=["normal_driving","eye_closure","yawning","looking_away","phone_use"];
+const $=id=>document.getElementById(id);
+const els={badge:$("socket-badge"),model:$("behavior-model"),backend:$("backend-name"),start:$("start-live"),stop:$("stop-live"),frame:$("frame-img"),frameEmpty:$("frame-empty"),skel:$("skeleton-img"),skelEmpty:$("skeleton-empty"),top:$("top-label"),conf:$("top-confidence"),risk:$("risk-score"),safety:$("safety-score"),alert:$("alert-level"),streak:$("temporal-streak"),face:$("face-state"),audio:$("audio-state"),skeleton:$("skeleton-state"),phone:$("phone-state"),buffer:$("buffer-count"),required:$("required-count"),prob:$("prob-list"),debug:$("debug-log"),events:$("event-log"),meter:$("audio-meter"),rms:$("audio-rms"),videoInput:$("video-input"),video:$("video-preview"),videoEmpty:$("video-empty")};
+function log(target,title,body){const item=document.createElement("div");item.className="log-item";item.innerHTML=`<strong>${title}</strong><span>${body||""}</span>`;target.prepend(item);while(target.children.length>12)target.lastElementChild.remove()}
+function badge(text,kind){els.badge.className=`badge ${kind||""}`;els.badge.textContent=text}
+function yesNo(v){if(v===true)return"Co";if(v===false)return"Khong";return"Chua co du lieu"}
+function fmt(v,d=1){return Number.isFinite(Number(v))?Number(v).toFixed(d):"--"}
+function card(id,state){const e=$(id);e.classList.remove("good","warn","bad");if(state===true)e.classList.add("good");if(state===false)e.classList.add("bad")}
+function renderProbs(probs){const map=new Map((probs||[]).map(x=>[x.class_name||x.label,Number(x.confidence||0)]));els.prob.innerHTML="";CLASS_LABELS.forEach(name=>{const v=map.get(name)||0;const row=document.createElement("div");row.className="prob-row";row.innerHTML=`<strong>${name}</strong><div class="bar"><i style="width:${Math.max(0,Math.min(100,v*100))}%"></i></div><span>${v.toFixed(3)}</span>`;els.prob.appendChild(row)})}
+function image(el,empty,src){if(!src)return;el.src=src.startsWith("data:")?src:`data:image/jpeg;base64,${src}`;el.classList.remove("hidden");empty.classList.add("hidden")}
+renderProbs([]);
+let socket=io(),running=false,audioContext=null,audioStream=null,audioSource=null,audioProcessor=null;
+socket.on("connect",()=>{badge("Da ket noi","good");log(els.debug,"Socket connected",socket.id)});
+socket.on("disconnect",()=>{badge("Mat ket noi","bad");log(els.debug,"Socket disconnected","")});
+socket.on("mmrt_lab_status",p=>{log(els.debug,"Lab status",JSON.stringify(p));if(p.frame_count_required!=null)els.required.textContent=p.frame_count_required});
+socket.on("mmrt_lab_error",p=>{badge("Loi lab","bad");log(els.debug,"Lab error",p.message||JSON.stringify(p))});
+socket.on("mmrt_lab_prediction",p=>log(els.events,p.label||"prediction",`conf=${fmt(p.confidence,3)}, streak=${p.temporal_streak}, event=${p.should_log_event?"yes":"no"}`));
+socket.on("mmrt_lab_snapshot",p=>{image(els.frame,els.frameEmpty,p.image);image(els.skel,els.skelEmpty,p.skeleton_image)});
+socket.on("mmrt_lab_update",p=>{
+  image(els.frame,els.frameEmpty,p.frame_image);image(els.skel,els.skelEmpty,p.skeleton_image);
+  els.top.textContent=p.top_label||p.stable_label||"Dang thu clip";els.conf.textContent=p.top_confidence!=null?fmt(p.top_confidence,3):"--";els.risk.textContent=p.risk_score!=null?fmt(p.risk_score,1):"--";els.safety.textContent=p.safety_score!=null?fmt(p.safety_score,1):"--";els.alert.textContent=p.alert_level||p.warning||"--";els.streak.textContent=p.temporal_streak!=null?p.temporal_streak:"--";
+  els.face.textContent=yesNo(p.face_detected);els.audio.textContent=p.audio_track_detected?"Co audio":"Dang cho audio";els.skeleton.textContent=p.pose_present?"Co skeleton":"Chua thay skeleton";els.phone.textContent=(p.top_label==="phone_use"||p.stable_label==="phone_use")?"Co":"Khong";els.buffer.textContent=p.buffered_frame_count!=null?p.buffered_frame_count:"--";els.required.textContent=p.frame_count_required||"--";
+  card("face-card",p.face_detected);card("audio-card",!!p.audio_track_detected);card("skeleton-card",!!p.pose_present);els.rms.textContent=`Mic RMS: ${fmt(p.audio_rms,4)}`;renderProbs(p.probabilities||[]);
+});
+async function startAudio(){try{audioStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});audioContext=new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});audioSource=audioContext.createMediaStreamSource(audioStream);audioProcessor=audioContext.createScriptProcessor(4096,1,1);audioSource.connect(audioProcessor);audioProcessor.connect(audioContext.destination);audioProcessor.onaudioprocess=e=>{if(!running)return;const input=e.inputBuffer.getChannelData(0);let sum=0;const arr=[];for(let i=0;i<input.length;i++){const s=Math.max(-1,Math.min(1,input[i]));sum+=s*s;arr.push(s)}const rms=Math.sqrt(sum/Math.max(1,input.length));els.meter.style.transform=`scaleX(${Math.max(.02,Math.min(1,rms*18))})`;els.rms.textContent=`Mic RMS: ${rms.toFixed(4)}`;socket.emit("mmrt_lab_audio_chunk",{sample_rate:audioContext.sampleRate,samples:arr,rms})}}catch(err){log(els.debug,"Audio disabled",err.message||String(err))}}
+function stopAudio(){if(audioStream)audioStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close();audioContext=null;audioStream=null;audioSource=null;audioProcessor=null}
+els.start.addEventListener("click",async()=>{running=true;els.backend.textContent=els.model.value;badge("Dang chay","warn");log(els.debug,"Start lab",`backend=${els.model.value}`);socket.emit("start_mmrt_lab_session",{behavior_model_backend:els.model.value});await startAudio()});
+els.stop.addEventListener("click",()=>{running=false;stopAudio();socket.emit("stop_mmrt_lab_session");log(els.debug,"Stop lab","")});
+els.videoInput.addEventListener("change",()=>{const f=els.videoInput.files&&els.videoInput.files[0];if(!f)return;els.video.src=URL.createObjectURL(f);els.video.classList.remove("hidden");els.videoEmpty.classList.add("hidden")});
+</script>
+</body>
+</html>

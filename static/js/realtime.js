@@ -11,6 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const snapshotEmpty = document.getElementById("realtime-snapshot-empty");
   const errorBox = document.getElementById("realtime-error");
   const logBox = document.getElementById("realtime-log");
+  const streamImage = document.querySelector(".realtime-stream");
+  const streamPlaceholder = document.getElementById("realtime-stream-placeholder");
   const skeletonPreviewImage = document.getElementById("skeleton-preview-image");
   const skeletonEmpty = document.getElementById("skeleton-empty");
   const audioLevelBar = document.getElementById("audio-level-bar");
@@ -27,10 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
     videoState: document.getElementById("metric-video-state"),
     audioState: document.getElementById("metric-audio-state"),
     skeletonState: document.getElementById("metric-skeleton-state"),
-    ear: document.getElementById("metric-ear"),
-    mar: document.getElementById("metric-mar"),
     activeLabels: document.getElementById("metric-active-labels"),
-    temporalBufferSize: document.getElementById("metric-temporal-buffer-size"),
+    temporalBufferSizeSide: document.getElementById("metric-temporal-buffer-size-side"),
     warning: document.getElementById("metric-warning"),
     eventCount: document.getElementById("metric-event-count"),
     analysisMode: document.getElementById("metric-analysis-mode"),
@@ -63,6 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
       card: document.getElementById("indicator-phone-detected"),
       value: document.getElementById("metric-phone-detected-status"),
     },
+    drowsiness: {
+      card: document.getElementById("indicator-drowsiness"),
+      value: document.getElementById("metric-drowsiness-status"),
+    },
   };
 
   const VI_FALLBACK = {
@@ -84,6 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let running = false;
   let lastSessionId = null;
+  let streamUrl = streamImage ? (streamImage.dataset.feedUrl || streamImage.getAttribute("src") || "") : "";
   let audioContext = null;
   let audioStream = null;
   let audioSource = null;
@@ -124,12 +129,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!indicator || !indicator.value || !indicator.card) return;
     const positiveWhenActive = options.positiveWhenActive === true;
     if (active == null) {
-      indicator.value.textContent = options.emptyText || "--";
-      indicator.card.classList.remove("is-good", "is-risk");
+      indicator.value.textContent = options.emptyText || t("realtime.no_data", "No data");
+      indicator.card.classList.remove("is-good", "is-risk", "is-unknown");
+      indicator.card.classList.add("is-unknown");
       return;
     }
     indicator.value.textContent = active ? activeText : inactiveText;
-    indicator.card.classList.remove("is-good", "is-risk");
+    indicator.card.classList.remove("is-good", "is-risk", "is-unknown");
     const activeClass = positiveWhenActive ? "is-good" : "is-risk";
     const inactiveClass = positiveWhenActive ? "is-risk" : "is-good";
     indicator.card.classList.add(active ? activeClass : inactiveClass);
@@ -156,6 +162,51 @@ document.addEventListener("DOMContentLoaded", () => {
         ? t("js.status_helper", "Realtime monitoring status: ") + t("js.running", VI_FALLBACK.running)
         : t("js.waiting_update", "Waiting for the first realtime update.");
     }
+  }
+
+  function resetLiveReadouts() {
+    [
+      "frameCount",
+      "riskScore",
+      "safetyScore",
+      "alertLevel",
+      "faceState",
+      "videoState",
+      "audioState",
+      "skeletonState",
+      "activeLabels",
+      "temporalBufferSizeSide",
+      "warning",
+      "eventCount",
+      "analysisMode",
+      "liveSession",
+      "liveModeNote",
+    ].forEach((id) => setText(id, "--"));
+    Object.values(statusIndicators).forEach((indicator) => {
+      setIndicator(indicator, null, "", "");
+    });
+    if (eventList) eventList.innerHTML = "";
+    if (logBox) logBox.innerHTML = "";
+    if (snapshotImage) {
+      snapshotImage.removeAttribute("src");
+      snapshotImage.classList.remove("is-visible");
+    }
+    if (snapshotEmpty) snapshotEmpty.classList.remove("hidden");
+    clearSkeleton();
+    setAudioMeter(0);
+  }
+
+  function detachPreviewStream() {
+    if (!streamImage) return;
+    if (!streamUrl) streamUrl = streamImage.dataset.feedUrl || streamImage.getAttribute("src") || "";
+    streamImage.removeAttribute("src");
+    if (streamPlaceholder) streamPlaceholder.classList.remove("hidden");
+  }
+
+  function restorePreviewStream() {
+    if (!streamImage || !streamUrl) return;
+    streamImage.setAttribute("src", `${streamUrl}${streamUrl.includes("?") ? "&" : "?"}ts=${Date.now()}`);
+    if (streamPlaceholder) streamPlaceholder.classList.add("hidden");
   }
 
   function setConnection(isConnected) {
@@ -248,10 +299,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setText("videoState", data.video_state || t("realtime.video_live", VI_FALLBACK.video_live));
     setText("audioState", data.audio_state || t("realtime.audio_waiting", VI_FALLBACK.audio_waiting));
     setText("skeletonState", data.skeleton_state || t("realtime.skeleton_waiting", VI_FALLBACK.skeleton_waiting));
-    setText("ear", data.ear != null ? Number(data.ear).toFixed(3) : "--");
-    setText("mar", data.mar != null ? Number(data.mar).toFixed(3) : "--");
     setText("activeLabels", isConfirmedAction ? (data.active_labels || t("realtime.monitoring", VI_FALLBACK.monitoring)) : t("realtime.monitoring", VI_FALLBACK.monitoring));
-    setText("temporalBufferSize", data.temporal_buffer_size != null ? data.temporal_buffer_size : "--");
+    setText("temporalBufferSizeSide", data.temporal_buffer_size != null ? data.temporal_buffer_size : "--");
     setText("warning", data.warning_key ? t(data.warning_key, data.warning || "--") : translateValue(data.warning, data.warning || "--"));
     setText("eventCount", data.event_count != null ? data.event_count : "--");
     setText("analysisMode", translateValue(data.analysis_mode, data.analysis_mode || "--"));
@@ -260,7 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setIndicator(
       statusIndicators.faceDetected,
-      Boolean(data.face_detected),
+      data.face_detected != null ? Boolean(data.face_detected) : null,
       t("js.detected", "Detected"),
       t("js.missing", "Missing"),
       { positiveWhenActive: true },
@@ -275,6 +324,26 @@ document.addEventListener("DOMContentLoaded", () => {
       t("common.yes", "Yes"),
       t("common.no", "No"),
     );
+    if (data.analysis_mode === "driver_safety_v1" || data.drowsiness_probability != null) {
+      const probability = data.drowsiness_probability;
+      const state = data.event_confirmed
+        ? t("realtime.drowsiness_confirmed", "Confirmed")
+        : data.alert_signal
+          ? t("realtime.drowsiness_warning", "Warning")
+          : data.drowsiness_state === "alert"
+            ? t("realtime.drowsiness_clear", "Alert")
+            : data.drowsiness_state === "collecting_features"
+              ? t("realtime.drowsiness_collecting", "Collecting")
+              : t("realtime.drowsiness_unknown", "No data");
+      const text = probability == null ? state : `${state} (${(Number(probability) * 100).toFixed(1)}%)`;
+      setIndicator(
+        statusIndicators.drowsiness,
+        probability == null ? null : Boolean(data.alert_signal || data.event_confirmed),
+        text,
+        text,
+        { emptyText: t("realtime.drowsiness_collecting", "Collecting") },
+      );
+    }
 
     if (statusHelper) {
       statusHelper.textContent = `${t("js.status_helper", "Realtime monitoring status: ")}${translateValue(data.alert_level, data.alert_level || "--")} | ${t("realtime.warning", "Warning")}: ${data.warning_key ? t(data.warning_key, data.warning || "--") : (data.warning || "--")}`;
@@ -294,11 +363,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function readPayload() {
     const behavior = document.getElementById("behavior-model-select");
     const behaviorBackend = behavior ? behavior.value : "mmrt_multimodal_full_v2_t4x2";
-    const usesMultimodalPhoneClass = String(behaviorBackend || "").toLowerCase().startsWith("mmrt");
-    const phoneDetector = document.getElementById("phone-detector-select");
     return {
       behavior_model_backend: behaviorBackend,
-      phone_detector_backend: usesMultimodalPhoneClass ? "disabled" : (phoneDetector ? phoneDetector.value : "disabled"),
+      phone_detector_backend: "disabled",
       language: getCurrentLanguage(),
     };
   }
@@ -371,6 +438,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!socket) {
       throw new Error("Socket.IO client is unavailable.");
     }
+    resetLiveReadouts();
+    detachPreviewStream();
     await startAudioCapture();
     socket.emit("start_realtime_session", readPayload());
   }
@@ -378,6 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function stopMonitoring() {
     if (socket) socket.emit("stop_realtime_session");
     stopAudioCapture();
+    detachPreviewStream();
   }
 
   if (!socket) {
@@ -416,6 +486,7 @@ document.addEventListener("DOMContentLoaded", () => {
       log(t("js.realtime_starting", "Realtime session is starting..."));
     } else if (payload.status === "running") {
       setState(true);
+      restorePreviewStream();
       if (statusHelper) statusHelper.textContent = `${t("js.realtime_running", "Session #")}${payload.session_id}${t("js.realtime_running_suffix", " is running on camera ")}${payload.camera_index}.`;
       log(`${t("js.realtime_running", "Session #")}${payload.session_id}${t("js.realtime_running_suffix", " is running on camera ")}${payload.camera_index}.`);
       if (payload.session_id) {
@@ -434,6 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (statusHelper) statusHelper.textContent = `${t("js.realtime_completed", "Realtime session completed. Safety ")}${payload.final_safety_score}${t("js.realtime_completed_middle", ", risk ")}${payload.final_risk_score}.`;
       log(`${t("js.realtime_completed", "Realtime session completed. Safety ")}${payload.final_safety_score}${t("js.realtime_completed_middle", ", risk ")}${payload.final_risk_score}.`);
       stopAudioCapture();
+      detachPreviewStream();
     }
   });
 
@@ -460,6 +532,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionLink.classList.remove("hidden");
     }
     stopAudioCapture();
+    detachPreviewStream();
     log(`${t("js.realtime_saved", "Saved session #")}${payload.session_id}.`, "success");
   });
 
@@ -472,6 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (statusHelper) statusHelper.textContent = message;
     setState(false);
     stopAudioCapture();
+    detachPreviewStream();
     log(message, "error");
   });
 

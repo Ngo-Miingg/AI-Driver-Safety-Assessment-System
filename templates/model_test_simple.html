@@ -202,6 +202,16 @@
         </div>
         <form method="post" enctype="multipart/form-data" class="stack">
           <label>
+            Behavior model
+            <select name="behavior_model_backend">
+              {% for option in behavior_model_options %}
+              <option value="{{ option.value }}" {% if option.value == behavior_backend %}selected{% endif %}>
+                {{ option.label }}
+              </option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
             Video input
             <input id="video-input" type="file" name="video" accept=".mp4,.avi,.mov,.mkv,video/mp4,video/x-msvideo,video/quicktime,video/x-matroska" required>
           </label>

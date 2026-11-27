@@ -270,6 +270,7 @@ class LiveMultimodalWindow:
         self._last_prediction_at = None
         self._last_prediction = None
         self._latest_pose_points = []
+        self._latest_input_status = None
 
     def close(self):
         try:
@@ -331,6 +332,17 @@ class LiveMultimodalWindow:
                 )
             else:
                 vec.extend([0.0, 0.0, 0.0])
+        points_by_index = {point["index"]: point for point in points}
+        for idx, lm in enumerate(landmarks):
+            if idx not in points_by_index:
+                points_by_index[idx] = {
+                    "index": int(idx),
+                    "x": float(lm.x),
+                    "y": float(lm.y),
+                    "z": float(lm.z),
+                    "visibility": float(getattr(lm, "visibility", 0.0) or 0.0),
+                }
+        points = [points_by_index[idx] for idx in sorted(points_by_index)]
         for idx in MMRT_V2_FACE_POINTS:
             if idx < len(landmarks):
                 lm = landmarks[idx]
@@ -387,6 +399,14 @@ class LiveMultimodalWindow:
                         "face_present": bool(face_detected),
                     }
                 )
+                self._latest_input_status = {
+                    "timestamp_seconds": timestamp_seconds,
+                    "sample_count": len(self._samples),
+                    "face_detected": bool(face_detected),
+                    "pose_present": bool(pose_present),
+                    "pose_points": list(pose_points),
+                    "audio_track_detected": bool(self._audio.size > 0),
+                }
             else:
                 self._samples.append(
                     {
@@ -397,6 +417,14 @@ class LiveMultimodalWindow:
                         "pose_present": bool(pose_present),
                     }
                 )
+                self._latest_input_status = {
+                    "timestamp_seconds": timestamp_seconds,
+                    "sample_count": len(self._samples),
+                    "face_detected": bool(pose_present),
+                    "pose_present": bool(pose_present),
+                    "pose_points": list(pose_points),
+                    "audio_track_detected": bool(self._audio.size > 0),
+                }
             self._last_sample_at = timestamp_seconds
             sampled = True
         return self._predict_if_ready(timestamp_seconds) if sampled else None
@@ -440,7 +468,7 @@ class LiveMultimodalWindow:
         if self._last_prediction_at is not None and (timestamp_seconds - self._last_prediction_at) < self.stride_seconds:
             return None
         start_seconds, samples = self._window_samples(timestamp_seconds)
-        if not samples:
+        if len(samples) < self.frame_count:
             return None
         audio_wave, audio_detected = self._audio_window(timestamp_seconds)
         if self._uses_mmrt:
@@ -531,6 +559,7 @@ class LiveMultimodalWindow:
             "temporal_streak": event_rule["streak"],
             "temporal_buffer_size": len(self._temporal_buffer),
             "audio_track_detected": audio_detected,
+            "face_frame_count": int(face_hits) if self._uses_mmrt else 0,
             "video_sample_count": int(len(samples)),
             "pose_frame_count": pose_frame_count,
             "skeleton_landmarks_detected": bool(pose_frame_count),
@@ -544,3 +573,7 @@ class LiveMultimodalWindow:
     @property
     def last_prediction(self):
         return self._last_prediction
+
+    @property
+    def latest_input_status(self):
+        return self._latest_input_status

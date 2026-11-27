@@ -1,4 +1,0 @@
-model,role,train_images,image_size,epochs_logged,best_epoch_by_map50_95,precision,recall,map50,map50_95,logged_time_seconds,model_size_mb
-YOLO26n baseline,Lightweight baseline / realtime fallback,3000,512,25,21,0.93237,0.86031,0.92854,0.76828,665.055,5.115788459777832
-RT-DETR-L compare,RT-DETR comparison checkpoint,3000,512,17,14,0.93969,0.93286,0.95693,0.77543,1952.2,63.1185884475708
-RT-DETR-L serious,Selected main phone detector,4500,512,16,8,0.93331,0.92239,0.95497,0.80077,2993.76,63.11852741241455

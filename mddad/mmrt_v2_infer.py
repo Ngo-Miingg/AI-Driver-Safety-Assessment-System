@@ -238,6 +238,25 @@ def _face_crop(frame_bgr, detector):
         crop = frame_bgr[y1:y2, x1:x2]
         if crop.size:
             return crop, True
+    try:
+        cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        cascade = cv2.CascadeClassifier(cascade_path)
+        if not cascade.empty():
+            gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+            faces = cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=4, minSize=(48, 48))
+            if len(faces):
+                x, y, fw, fh = max(faces, key=lambda item: int(item[2]) * int(item[3]))
+                pad_x = int(fw * 0.18)
+                pad_y = int(fh * 0.22)
+                x1 = max(0, int(x - pad_x))
+                y1 = max(0, int(y - pad_y))
+                x2 = min(w, int(x + fw + pad_x))
+                y2 = min(h, int(y + fh + pad_y))
+                crop = frame_bgr[y1:y2, x1:x2]
+                if crop.size:
+                    return crop, True
+    except Exception:
+        pass
     x1 = int(w * 0.25)
     x2 = int(w * 0.75)
     y1 = 0

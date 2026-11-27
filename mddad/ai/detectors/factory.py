@@ -30,7 +30,6 @@ class DetectorFactory:
         "yolo_pretrained",
         "yolo_finetuned",
         "rtdetr_finetuned",
-        "rtdetr_light_compare",
     }
 
     @classmethod
@@ -40,8 +39,6 @@ class DetectorFactory:
             return app.config["YOLO_FINETUNED_MODEL_PATH"]
         if backend == "rtdetr_finetuned":
             return app.config["RTDETR_MODEL_PATH"]
-        if backend == "rtdetr_light_compare":
-            return app.config["RTDETR_LIGHT_COMPARE_MODEL_PATH"]
         if backend == "yolo_pretrained":
             if realtime:
                 return app.config.get("REALTIME_YOLO_MODEL_PATH") or app.config["YOLO_PRETRAINED_MODEL_PATH"]

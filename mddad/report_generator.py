@@ -53,6 +53,8 @@ def generate_report(session, events, summary, analysis_mode="simulated"):
         mode_text = "realtime MediaPipe webcam mode"
     elif analysis_mode == "realtime_mediapipe_yolo":
         mode_text = "realtime MediaPipe webcam mode with optional low-rate phone detection"
+    elif analysis_mode == "driver_safety_v1":
+        mode_text = "Driver Safety v1 webcam mode with YOLO face detection and temporal BiLSTM drowsiness inference"
     else:
         mode_text = "MediaPipe heuristic mode"
     report_summary = (
@@ -80,6 +82,8 @@ def generate_report(session, events, summary, analysis_mode="simulated"):
             if analysis_mode == "full_ai"
             else "realtime MediaPipe face signals and low-rate phone detections"
             if analysis_mode == "realtime_mediapipe_yolo"
+            else "YOLO face detection and a 15-frame sequence of face landmarks processed by the temporal drowsiness model"
+            if analysis_mode == "driver_safety_v1"
             else "realtime MediaPipe face signals"
             if analysis_mode == "realtime_mediapipe"
             else "MediaPipe-derived EAR, MAR, face visibility, and head-direction candidates"

@@ -1,0 +1,1273 @@
+{
+  "schema_version": "3.0",
+  "function_name": "Xác thực khuôn mặt",
+  "document_mode": "as_is",
+  "diagram_skill": "sequence-mermaid",
+  "participants": ["USER", "FE", "BE", "DB"],
+  "business_flow": {
+    "steps": [
+      {
+        "step_id": "S1",
+        "step": 1,
+        "title": "Kiểm tra hồ sơ tài xế và trạng thái bộ xác thực khuôn mặt",
+        "description": "Người dùng mở màn hình chi tiết tài xế để xem trạng thái đăng ký khuôn mặt và mức sẵn sàng của bộ xác thực.",
+        "interactions": [
+          {
+            "interaction_id": "S1-I1",
+            "order": 1,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Mở màn hình chi tiết tài xế",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e08", "e02"]
+          },
+          {
+            "interaction_id": "S1-I2",
+            "order": 2,
+            "type": "message",
+            "source": "FE",
+            "target": "BE",
+            "action": "Yêu cầu thông tin tài xế và trạng thái bộ xác thực khuôn mặt",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e08", "e05"]
+          },
+          {
+            "interaction_id": "S1-I3",
+            "order": 3,
+            "type": "database",
+            "source": "BE",
+            "target": "DB",
+            "action": "Truy vấn hồ sơ tài xế và dữ liệu đăng ký khuôn mặt",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e07", "e02"]
+          },
+          {
+            "interaction_id": "S1-I4",
+            "order": 4,
+            "type": "response",
+            "source": "DB",
+            "target": "BE",
+            "action": "Trả dữ liệu tài xế và hồ sơ đăng ký khuôn mặt",
+            "branch_id": null,
+            "reply_to_interaction_id": "S1-I3",
+            "expects_response": false,
+            "evidence_refs": ["e07"]
+          },
+          {
+            "interaction_id": "S1-I5",
+            "order": 5,
+            "type": "response",
+            "source": "BE",
+            "target": "FE",
+            "action": "Trả thông tin tài xế, trạng thái đăng ký và trạng thái bộ xác thực",
+            "branch_id": null,
+            "reply_to_interaction_id": "S1-I2",
+            "expects_response": false,
+            "evidence_refs": ["e05", "e08"]
+          },
+          {
+            "interaction_id": "S1-I6",
+            "order": 6,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị màn hình chi tiết tài xế kèm panel đăng ký khuôn mặt",
+            "branch_id": null,
+            "reply_to_interaction_id": "S1-I1",
+            "expects_response": false,
+            "evidence_refs": ["e08"]
+          }
+        ],
+        "processing": [
+          "Hệ thống kiểm tra tệp mô hình xác thực khuôn mặt và runtime để xác định trạng thái sẵn sàng cho đăng ký."
+        ],
+        "branches": [],
+        "result": "Màn hình chi tiết tài xế hiển thị trạng thái đăng ký khuôn mặt (đã đăng ký hoặc chưa đăng ký), ngưỡng khớp và trạng thái bộ xác thực."
+      },
+      {
+        "step_id": "S2",
+        "step": 2,
+        "title": "Thu thập mẫu khuôn mặt",
+        "description": "Người dùng dùng camera để chụp các mẫu khuôn mặt theo hướng dẫn hoặc tải ảnh khuôn mặt lên để làm dữ liệu đăng ký.",
+        "interactions": [
+          {
+            "interaction_id": "S2-I1",
+            "order": 1,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Bấm Mở camera",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e09", "e08"]
+          },
+          {
+            "interaction_id": "S2-I2",
+            "order": 2,
+            "type": "message",
+            "source": "FE",
+            "target": "FE",
+            "action": "Mở camera và hiển thị luồng video trong panel đăng ký",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e09"]
+          },
+          {
+            "interaction_id": "S2-I3",
+            "order": 3,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị trạng thái camera sẵn sàng hoặc thông báo không mở được camera",
+            "branch_id": null,
+            "reply_to_interaction_id": "S2-I1",
+            "expects_response": false,
+            "evidence_refs": ["e09"]
+          },
+          {
+            "interaction_id": "S2-I4",
+            "order": 4,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Bấm Chụp mẫu theo hướng dẫn",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e09", "e08"]
+          },
+          {
+            "interaction_id": "S2-I5",
+            "order": 5,
+            "type": "message",
+            "source": "FE",
+            "target": "FE",
+            "action": "Chụp tự động sáu mẫu khuôn mặt theo các góc hướng dẫn",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e09"]
+          },
+          {
+            "interaction_id": "S2-I6",
+            "order": 6,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị số mẫu đã chụp và ảnh thu nhỏ",
+            "branch_id": null,
+            "reply_to_interaction_id": "S2-I4",
+            "expects_response": false,
+            "evidence_refs": ["e09"]
+          },
+          {
+            "interaction_id": "S2-I7",
+            "order": 7,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Chọn ảnh khuôn mặt từ tệp để tải lên",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e08"]
+          },
+          {
+            "interaction_id": "S2-I8",
+            "order": 8,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị ảnh khuôn mặt đã chọn",
+            "branch_id": null,
+            "reply_to_interaction_id": "S2-I7",
+            "expects_response": false,
+            "evidence_refs": ["e08"]
+          }
+        ],
+        "processing": [
+          "Nếu camera không mở được, giao diện thông báo và người dùng có thể dùng cách tải ảnh lên thay thế.",
+          "Mẫu chụp từ camera và ảnh tải lên có thể được gộp chung, tối đa mười hai ảnh cho một lần đăng ký."
+        ],
+        "branches": [],
+        "result": "Người dùng đã thu thập các mẫu khuôn mặt từ camera và/hoặc ảnh tải lên để gửi đăng ký."
+      },
+      {
+        "step_id": "S3",
+        "step": 3,
+        "title": "Đăng ký khuôn mặt cho tài xế",
+        "description": "Người dùng gửi các mẫu khuôn mặt, hệ thống kiểm tra tính hợp lệ, trích xuất đặc trưng khuôn mặt và lưu hồ sơ đăng ký cho tài xế.",
+        "interactions": [
+          {
+            "interaction_id": "S3-I1",
+            "order": 1,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Bấm Đăng ký khuôn mặt",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e08"]
+          },
+          {
+            "interaction_id": "S3-I2",
+            "order": 2,
+            "type": "message",
+            "source": "FE",
+            "target": "BE",
+            "action": "Gửi các ảnh mẫu khuôn mặt kèm thông tin góc chụp để đăng ký",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e01", "e09"]
+          },
+          {
+            "interaction_id": "S3-I3",
+            "order": 3,
+            "type": "validation",
+            "source": "BE",
+            "target": "BE",
+            "action": "Kiểm tra có ảnh mẫu, định dạng cho phép và trạng thái bộ xác thực",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e01", "e03"]
+          },
+          {
+            "interaction_id": "S3-I4",
+            "order": 4,
+            "type": "database",
+            "source": "BE",
+            "target": "DB",
+            "action": "Lưu ảnh mẫu hợp lệ và cập nhật hồ sơ tài xế, hồ sơ sinh trắc học, ghi nhật ký",
+            "branch_id": "S3-B1",
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e01", "e06", "e07"]
+          },
+          {
+            "interaction_id": "S3-I5",
+            "order": 5,
+            "type": "response",
+            "source": "DB",
+            "target": "BE",
+            "action": "Trả kết quả lưu thành công",
+            "branch_id": "S3-B1",
+            "reply_to_interaction_id": "S3-I4",
+            "expects_response": false,
+            "evidence_refs": ["e06"]
+          },
+          {
+            "interaction_id": "S3-I6",
+            "order": 6,
+            "type": "response",
+            "source": "BE",
+            "target": "FE",
+            "action": "Trả kết quả đăng ký thành công kèm số mẫu hợp lệ và số ảnh bị bỏ qua",
+            "branch_id": "S3-B1",
+            "reply_to_interaction_id": "S3-I2",
+            "expects_response": false,
+            "evidence_refs": ["e01"]
+          },
+          {
+            "interaction_id": "S3-I7",
+            "order": 7,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị thông báo đã lưu đăng ký khuôn mặt và trạng thái Đã đăng ký",
+            "branch_id": "S3-B1",
+            "reply_to_interaction_id": "S3-I1",
+            "expects_response": false,
+            "evidence_refs": ["e08"]
+          },
+          {
+            "interaction_id": "S3-I8",
+            "order": 8,
+            "type": "response",
+            "source": "BE",
+            "target": "FE",
+            "action": "Trả thông báo chưa có ảnh mẫu hoặc định dạng không hợp lệ",
+            "branch_id": "S3-B2",
+            "reply_to_interaction_id": "S3-I2",
+            "expects_response": false,
+            "evidence_refs": ["e01"]
+          },
+          {
+            "interaction_id": "S3-I9",
+            "order": 9,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị thông báo lỗi, không thực hiện đăng ký",
+            "branch_id": "S3-B2",
+            "reply_to_interaction_id": "S3-I1",
+            "expects_response": false,
+            "evidence_refs": ["e08"]
+          },
+          {
+            "interaction_id": "S3-I10",
+            "order": 10,
+            "type": "response",
+            "source": "BE",
+            "target": "FE",
+            "action": "Trả thông báo bộ xác thực chưa sẵn sàng",
+            "branch_id": "S3-B3",
+            "reply_to_interaction_id": "S3-I2",
+            "expects_response": false,
+            "evidence_refs": ["e01", "e03"]
+          },
+          {
+            "interaction_id": "S3-I11",
+            "order": 11,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị thông báo lỗi, không thực hiện đăng ký",
+            "branch_id": "S3-B3",
+            "reply_to_interaction_id": "S3-I1",
+            "expects_response": false,
+            "evidence_refs": ["e08"]
+          },
+          {
+            "interaction_id": "S3-I12",
+            "order": 12,
+            "type": "message",
+            "source": "BE",
+            "target": "BE",
+            "action": "Hủy các thay đổi chưa lưu khi không tạo được đặc trưng hợp lệ",
+            "branch_id": "S3-B4",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e01"]
+          },
+          {
+            "interaction_id": "S3-I13",
+            "order": 13,
+            "type": "response",
+            "source": "BE",
+            "target": "FE",
+            "action": "Trả thông báo không tạo được đặc trưng khuôn mặt hợp lệ",
+            "branch_id": "S3-B4",
+            "reply_to_interaction_id": "S3-I2",
+            "expects_response": false,
+            "evidence_refs": ["e01"]
+          },
+          {
+            "interaction_id": "S3-I14",
+            "order": 14,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị thông báo lỗi, không thực hiện đăng ký",
+            "branch_id": "S3-B4",
+            "reply_to_interaction_id": "S3-I1",
+            "expects_response": false,
+            "evidence_refs": ["e08"]
+          }
+        ],
+        "processing": [
+          "Với từng ảnh mẫu hợp lệ, hệ thống định vị khuôn mặt lớn nhất, trích xuất đặc trưng khuôn mặt và lưu ảnh mẫu.",
+          "Hệ thống gộp các đặc trưng hợp lệ thành một đặc trưng đại diện, kiểm tra độ nhất quán rồi lưu hồ sơ đăng ký khuôn mặt.",
+          "Ảnh không đọc được hoặc không phát hiện khuôn mặt bị bỏ qua và được thống kê trong kết quả.",
+          "Ngưỡng khớp mặc định 0.94 được lưu cùng hồ sơ sinh trắc học."
+        ],
+        "branches": [
+          {
+            "branch_id": "S3-B1",
+            "label": "Mẫu hợp lệ và đăng ký thành công",
+            "kind": "success",
+            "condition": "Có ảnh mẫu hợp lệ, bộ xác thực sẵn sàng và tạo được đặc trưng khuôn mặt.",
+            "interaction_ids": ["S3-I4", "S3-I5", "S3-I6", "S3-I7"],
+            "outcome": "Hồ sơ đăng ký khuôn mặt của tài xế được lưu và hiển thị trạng thái Đã đăng ký.",
+            "next_step_id": "S4"
+          },
+          {
+            "branch_id": "S3-B2",
+            "label": "Không có ảnh mẫu hoặc định dạng không hợp lệ",
+            "kind": "exception",
+            "condition": "Không có ảnh mẫu được gửi hoặc ảnh không thuộc định dạng cho phép.",
+            "interaction_ids": ["S3-I8", "S3-I9"],
+            "outcome": "Đăng ký không được thực hiện, hiển thị thông báo lỗi.",
+            "next_step_id": null
+          },
+          {
+            "branch_id": "S3-B3",
+            "label": "Bộ xác thực chưa sẵn sàng",
+            "kind": "exception",
+            "condition": "Mô hình hoặc runtime xác thực khuôn mặt không khả dụng.",
+            "interaction_ids": ["S3-I10", "S3-I11"],
+            "outcome": "Đăng ký không được thực hiện, hiển thị thông báo lỗi.",
+            "next_step_id": null
+          },
+          {
+            "branch_id": "S3-B4",
+            "label": "Không tạo được đặc trưng khuôn mặt hợp lệ",
+            "kind": "exception",
+            "condition": "Không ảnh mẫu nào trích xuất được đặc trưng khuôn mặt hợp lệ.",
+            "interaction_ids": ["S3-I12", "S3-I13", "S3-I14"],
+            "outcome": "Các thay đổi chưa lưu được hủy, đăng ký không được thực hiện.",
+            "next_step_id": null
+          }
+        ],
+        "result": "Hồ sơ đăng ký khuôn mặt của tài xế được tạo mới hoặc cập nhật; hoặc hệ thống thông báo lỗi và không lưu gì."
+      },
+      {
+        "step_id": "S4",
+        "step": 4,
+        "title": "Xóa đăng ký khuôn mặt",
+        "description": "Người dùng xóa hồ sơ đăng ký khuôn mặt đã có của tài xế khi không còn muốn sử dụng xác thực khuôn mặt.",
+        "interactions": [
+          {
+            "interaction_id": "S4-I1",
+            "order": 1,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Bấm Xóa đăng ký khuôn mặt",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e08"]
+          },
+          {
+            "interaction_id": "S4-I2",
+            "order": 2,
+            "type": "message",
+            "source": "FE",
+            "target": "BE",
+            "action": "Gửi yêu cầu xóa hồ sơ đăng ký khuôn mặt",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e02"]
+          },
+          {
+            "interaction_id": "S4-I3",
+            "order": 3,
+            "type": "database",
+            "source": "BE",
+            "target": "DB",
+            "action": "Xóa hồ sơ đăng ký khuôn mặt khỏi tài xế, vô hiệu hóa hồ sơ sinh trắc học và ghi nhật ký",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e02", "e06", "e07"]
+          },
+          {
+            "interaction_id": "S4-I4",
+            "order": 4,
+            "type": "response",
+            "source": "DB",
+            "target": "BE",
+            "action": "Trả kết quả xóa thành công",
+            "branch_id": null,
+            "reply_to_interaction_id": "S4-I3",
+            "expects_response": false,
+            "evidence_refs": ["e02"]
+          },
+          {
+            "interaction_id": "S4-I5",
+            "order": 5,
+            "type": "response",
+            "source": "BE",
+            "target": "FE",
+            "action": "Trả kết quả đã xóa đăng ký khuôn mặt",
+            "branch_id": null,
+            "reply_to_interaction_id": "S4-I2",
+            "expects_response": false,
+            "evidence_refs": ["e02"]
+          },
+          {
+            "interaction_id": "S4-I6",
+            "order": 6,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị thông báo đã xóa và trạng thái Chưa đăng ký",
+            "branch_id": null,
+            "reply_to_interaction_id": "S4-I1",
+            "expects_response": false,
+            "evidence_refs": ["e08"]
+          }
+        ],
+        "processing": [
+          "Hệ thống cũng xóa tệp ảnh khuôn mặt đăng ký nếu có."
+        ],
+        "branches": [],
+        "result": "Hồ sơ đăng ký khuôn mặt của tài xế bị xóa; màn hình hiển thị trạng thái Chưa đăng ký."
+      },
+      {
+        "step_id": "S5",
+        "step": 5,
+        "title": "Chọn tài xế và mở màn hình giám sát realtime",
+        "description": "Người dùng chọn tài xế làm tài xế hiện tại và mở màn hình giám sát realtime để bắt đầu phiên giám sát.",
+        "interactions": [
+          {
+            "interaction_id": "S5-I1",
+            "order": 1,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Chọn tài xế làm tài xế hiện tại",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e02"]
+          },
+          {
+            "interaction_id": "S5-I2",
+            "order": 2,
+            "type": "message",
+            "source": "FE",
+            "target": "BE",
+            "action": "Gửi yêu cầu chọn tài xế",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e02"]
+          },
+          {
+            "interaction_id": "S5-I3",
+            "order": 3,
+            "type": "message",
+            "source": "BE",
+            "target": "BE",
+            "action": "Lưu tài xế hiện tại vào phiên làm việc",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e02"]
+          },
+          {
+            "interaction_id": "S5-I4",
+            "order": 4,
+            "type": "response",
+            "source": "BE",
+            "target": "FE",
+            "action": "Trả kết quả đã chọn tài xế",
+            "branch_id": null,
+            "reply_to_interaction_id": "S5-I2",
+            "expects_response": false,
+            "evidence_refs": ["e02"]
+          },
+          {
+            "interaction_id": "S5-I5",
+            "order": 5,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị trạng thái đã chọn tài xế",
+            "branch_id": null,
+            "reply_to_interaction_id": "S5-I1",
+            "expects_response": false,
+            "evidence_refs": ["e08"]
+          },
+          {
+            "interaction_id": "S5-I6",
+            "order": 6,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Mở màn hình giám sát realtime",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e13"]
+          },
+          {
+            "interaction_id": "S5-I7",
+            "order": 7,
+            "type": "message",
+            "source": "FE",
+            "target": "BE",
+            "action": "Yêu cầu trang giám sát realtime",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e13"]
+          },
+          {
+            "interaction_id": "S5-I8",
+            "order": 8,
+            "type": "database",
+            "source": "BE",
+            "target": "DB",
+            "action": "Truy vấn tài xế hiện tại và trạng thái các mô hình",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e13", "e05"]
+          },
+          {
+            "interaction_id": "S5-I9",
+            "order": 9,
+            "type": "response",
+            "source": "DB",
+            "target": "BE",
+            "action": "Trả dữ liệu tài xế hiện tại",
+            "branch_id": null,
+            "reply_to_interaction_id": "S5-I8",
+            "expects_response": false,
+            "evidence_refs": ["e13"]
+          },
+          {
+            "interaction_id": "S5-I10",
+            "order": 10,
+            "type": "response",
+            "source": "BE",
+            "target": "FE",
+            "action": "Trả trang giám sát với cấu hình và trạng thái mô hình",
+            "branch_id": null,
+            "reply_to_interaction_id": "S5-I7",
+            "expects_response": false,
+            "evidence_refs": ["e13"]
+          },
+          {
+            "interaction_id": "S5-I11",
+            "order": 11,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị màn hình giám sát realtime với tài xế hiện tại",
+            "branch_id": null,
+            "reply_to_interaction_id": "S5-I6",
+            "expects_response": false,
+            "evidence_refs": ["e14"]
+          }
+        ],
+        "processing": [],
+        "branches": [],
+        "result": "Màn hình giám sát realtime hiển thị tài xế hiện tại và mục trạng thái xác thực danh tính."
+      },
+      {
+        "step_id": "S6",
+        "step": 6,
+        "title": "Bắt đầu phiên giám sát realtime",
+        "description": "Người dùng bắt đầu phiên giám sát; hệ thống khởi tạo pipeline, tạo phiên và nạp hồ sơ khuôn mặt đã đăng ký của tài xế.",
+        "interactions": [
+          {
+            "interaction_id": "S6-I1",
+            "order": 1,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Bấm Bắt đầu giám sát",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e14"]
+          },
+          {
+            "interaction_id": "S6-I2",
+            "order": 2,
+            "type": "async",
+            "source": "FE",
+            "target": "BE",
+            "action": "Gửi yêu cầu bắt đầu phiên giám sát realtime",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e10"]
+          },
+          {
+            "interaction_id": "S6-I3",
+            "order": 3,
+            "type": "message",
+            "source": "BE",
+            "target": "BE",
+            "action": "Kiểm tra tài xế hiện tại, khởi tạo pipeline và nạp hồ sơ khuôn mặt đã đăng ký",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e11"]
+          },
+          {
+            "interaction_id": "S6-I4",
+            "order": 4,
+            "type": "database",
+            "source": "BE",
+            "target": "DB",
+            "action": "Tạo phiên giám sát, ghi nhận mô hình xác thực khuôn mặt tham gia",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e12", "e11"]
+          },
+          {
+            "interaction_id": "S6-I5",
+            "order": 5,
+            "type": "response",
+            "source": "DB",
+            "target": "BE",
+            "action": "Trả kết quả tạo phiên thành công",
+            "branch_id": null,
+            "reply_to_interaction_id": "S6-I4",
+            "expects_response": false,
+            "evidence_refs": ["e12"]
+          },
+          {
+            "interaction_id": "S6-I6",
+            "order": 6,
+            "type": "notification",
+            "source": "BE",
+            "target": "FE",
+            "action": "Thông báo phiên đang chạy kèm trạng thái danh tính khởi tạo",
+            "branch_id": "S6-B1",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e11", "e14"]
+          },
+          {
+            "interaction_id": "S6-I7",
+            "order": 7,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị phiên đang chạy và luồng video camera",
+            "branch_id": "S6-B1",
+            "reply_to_interaction_id": "S6-I1",
+            "expects_response": false,
+            "evidence_refs": ["e14"]
+          },
+          {
+            "interaction_id": "S6-I8",
+            "order": 8,
+            "type": "notification",
+            "source": "BE",
+            "target": "FE",
+            "action": "Thông báo lỗi không khởi động được phiên giám sát",
+            "branch_id": "S6-B2",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e11"]
+          },
+          {
+            "interaction_id": "S6-I9",
+            "order": 9,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị thông báo lỗi và không bắt đầu phiên",
+            "branch_id": "S6-B2",
+            "reply_to_interaction_id": "S6-I1",
+            "expects_response": false,
+            "evidence_refs": ["e14"]
+          }
+        ],
+        "processing": [
+          "Nếu tài xế chưa đăng ký khuôn mặt, trạng thái danh tính khởi tạo là Chưa đăng ký.",
+          "Nếu bộ xác thực khuôn mặt không sẵn sàng, trạng thái danh tính khởi tạo là Chưa sẵn sàng.",
+          "Nếu có hồ sơ đăng ký và bộ xác thực sẵn sàng, trạng thái danh tính khởi tạo là Đang xác thực."
+        ],
+        "branches": [
+          {
+            "branch_id": "S6-B1",
+            "label": "Phiên khởi động thành công",
+            "kind": "success",
+            "condition": "Tài xẻ hiện tại hợp lệ và pipeline khởi tạo không lỗi.",
+            "interaction_ids": ["S6-I6", "S6-I7"],
+            "outcome": "Phiên giám sát chạy và hiển thị luồng video cùng trạng thái danh tính.",
+            "next_step_id": "S7"
+          },
+          {
+            "branch_id": "S6-B2",
+            "label": "Không khởi động được phiên",
+            "kind": "exception",
+            "condition": "Không mở được webcam hoặc pipeline báo lỗi.",
+            "interaction_ids": ["S6-I8", "S6-I9"],
+            "outcome": "Phiên không được tạo, hiển thị thông báo lỗi.",
+            "next_step_id": null
+          }
+        ],
+        "result": "Phiên giám sát realtime chạy và sẵn sàng xác thực danh tính khuôn mặt; hoặc thông báo lỗi nếu khởi động thất bại."
+      },
+      {
+        "step_id": "S7",
+        "step": 7,
+        "title": "Xác thực danh tính khuôn mặt trong thời gian thực",
+        "description": "Trong suốt phiên giám sát, hệ thống phát hiện khuôn mặt, so sánh với hồ sơ đã đăng ký và cập nhật liên tục trạng thái danh tính cho người dùng.",
+        "interactions": [
+          {
+            "interaction_id": "S7-I1",
+            "order": 1,
+            "type": "notification",
+            "source": "BE",
+            "target": "FE",
+            "action": "Cập nhật trạng thái danh tính Đúng tài xế kèm khoảng cách đặc trưng",
+            "branch_id": "S7-B1",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e11", "e14"]
+          },
+          {
+            "interaction_id": "S7-I2",
+            "order": 2,
+            "type": "notification",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị trạng thái Đúng tài xế",
+            "branch_id": "S7-B1",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e14"]
+          },
+          {
+            "interaction_id": "S7-I3",
+            "order": 3,
+            "type": "notification",
+            "source": "BE",
+            "target": "FE",
+            "action": "Cập nhật trạng thái danh tính Sai tài xế kèm khoảng cách đặc trưng",
+            "branch_id": "S7-B2",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e11", "e14"]
+          },
+          {
+            "interaction_id": "S7-I4",
+            "order": 4,
+            "type": "notification",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị trạng thái Sai tài xế",
+            "branch_id": "S7-B2",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e14"]
+          },
+          {
+            "interaction_id": "S7-I5",
+            "order": 5,
+            "type": "notification",
+            "source": "BE",
+            "target": "FE",
+            "action": "Cập nhật trạng thái danh tính Chưa đăng ký",
+            "branch_id": "S7-B3",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e11", "e14"]
+          },
+          {
+            "interaction_id": "S7-I6",
+            "order": 6,
+            "type": "notification",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị trạng thái Chưa đăng ký",
+            "branch_id": "S7-B3",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e14"]
+          },
+          {
+            "interaction_id": "S7-I7",
+            "order": 7,
+            "type": "notification",
+            "source": "BE",
+            "target": "FE",
+            "action": "Cập nhật trạng thái danh tính Chưa sẵn sàng hoặc Lỗi xác thực",
+            "branch_id": "S7-B4",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e11", "e14"]
+          },
+          {
+            "interaction_id": "S7-I8",
+            "order": 8,
+            "type": "notification",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị trạng thái Chưa sẵn sàng hoặc Lỗi xác thực",
+            "branch_id": "S7-B4",
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e14"]
+          },
+          {
+            "interaction_id": "S7-I9",
+            "order": 9,
+            "type": "database",
+            "source": "BE",
+            "target": "DB",
+            "action": "Lưu kết quả nhận diện kèm trạng thái danh tính vào bản ghi dự đoán của phiên",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e11", "e12"]
+          },
+          {
+            "interaction_id": "S7-I10",
+            "order": 10,
+            "type": "response",
+            "source": "DB",
+            "target": "BE",
+            "action": "Trả kết quả lưu thành công",
+            "branch_id": null,
+            "reply_to_interaction_id": "S7-I9",
+            "expects_response": false,
+            "evidence_refs": ["e12"]
+          }
+        ],
+        "processing": [
+          "Với mỗi khung hình có khuôn mặt, hệ thống trích xuất đặc trưng khuôn mặt hiện tại và so sánh với hồ sơ đã đăng ký.",
+          "Việc so sánh được thực hiện tối đa một lần mỗi giây để tiết kiệm tài nguyên.",
+          "Khoảng cách đặc trưng nhỏ hơn hoặc bằng ngưỡng 0.94 được xem là Đúng tài xế; ngược lại là Sai tài xế.",
+          "Kết quả danh tính được lưu kèm theo từng bản ghi nhận diện của phiên."
+        ],
+        "branches": [
+          {
+            "branch_id": "S7-B1",
+            "label": "Khuôn mặt khớp với hồ sơ đã đăng ký",
+            "kind": "success",
+            "condition": "Có khuôn mặt trong khung hình và khoảng cách đặc trưng không vượt ngưỡng.",
+            "interaction_ids": ["S7-I1", "S7-I2"],
+            "outcome": "Trạng thái danh tính hiển thị Đúng tài xế.",
+            "next_step_id": "S8"
+          },
+          {
+            "branch_id": "S7-B2",
+            "label": "Khuôn mặt không khớp với hồ sơ đã đăng ký",
+            "kind": "alternative",
+            "condition": "Có khuôn mặt trong khung hình nhưng khoảng cách đặc trưng vượt ngưỡng.",
+            "interaction_ids": ["S7-I3", "S7-I4"],
+            "outcome": "Trạng thái danh tính hiển thị Sai tài xế.",
+            "next_step_id": "S8"
+          },
+          {
+            "branch_id": "S7-B3",
+            "label": "Tài xẻ chưa đăng ký khuôn mặt",
+            "kind": "alternative",
+            "condition": "Không tìm thấy hồ sơ đăng ký khuôn mặt của tài xế.",
+            "interaction_ids": ["S7-I5", "S7-I6"],
+            "outcome": "Trạng thái danh tính hiển thị Chưa đăng ký.",
+            "next_step_id": "S8"
+          },
+          {
+            "branch_id": "S7-B4",
+            "label": "Bộ xác thực chưa sẵn sàng hoặc lỗi xác thực",
+            "kind": "exception",
+            "condition": "Bộ xác thực không sẵn sàng hoặc quá trình trích xuất gặp lỗi.",
+            "interaction_ids": ["S7-I7", "S7-I8"],
+            "outcome": "Trạng thái danh tính hiển thị Chưa sẵn sàng hoặc Lỗi xác thực.",
+            "next_step_id": "S8"
+          }
+        ],
+        "result": "Trạng thái danh tính được cập nhật liên tục (Đúng tài xế, Sai tài xế, Chưa đăng ký, Chưa sẵn sàng hoặc Lỗi xác thực) trong suốt phiên."
+      },
+      {
+        "step_id": "S8",
+        "step": 8,
+        "title": "Kết thúc phiên giám sát realtime",
+        "description": "Người dùng dừng phiên giám sát; hệ thống đóng webcam, tổng hợp và lưu kết quả phiên kèm trạng thái danh tính cuối.",
+        "interactions": [
+          {
+            "interaction_id": "S8-I1",
+            "order": 1,
+            "type": "message",
+            "source": "USER",
+            "target": "FE",
+            "action": "Bấm Dừng giám sát",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e14"]
+          },
+          {
+            "interaction_id": "S8-I2",
+            "order": 2,
+            "type": "async",
+            "source": "FE",
+            "target": "BE",
+            "action": "Gửi yêu cầu dừng phiên giám sát",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e10"]
+          },
+          {
+            "interaction_id": "S8-I3",
+            "order": 3,
+            "type": "message",
+            "source": "BE",
+            "target": "BE",
+            "action": "Dừng vòng lặp xử lý, đóng webcam và tổng hợp kết quả phiên",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e11", "e12"]
+          },
+          {
+            "interaction_id": "S8-I4",
+            "order": 4,
+            "type": "database",
+            "source": "BE",
+            "target": "DB",
+            "action": "Cập nhật phiên hoàn tất, lưu kết quả tổng hợp, sự kiện và báo cáo kèm trạng thái danh tính",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": true,
+            "evidence_refs": ["e12", "e11"]
+          },
+          {
+            "interaction_id": "S8-I5",
+            "order": 5,
+            "type": "response",
+            "source": "DB",
+            "target": "BE",
+            "action": "Trả kết quả lưu phiên thành công",
+            "branch_id": null,
+            "reply_to_interaction_id": "S8-I4",
+            "expects_response": false,
+            "evidence_refs": ["e12"]
+          },
+          {
+            "interaction_id": "S8-I6",
+            "order": 6,
+            "type": "notification",
+            "source": "BE",
+            "target": "FE",
+            "action": "Thông báo phiên đã hoàn tất kèm liên kết xem chi tiết phiên",
+            "branch_id": null,
+            "reply_to_interaction_id": null,
+            "expects_response": false,
+            "evidence_refs": ["e12"]
+          },
+          {
+            "interaction_id": "S8-I7",
+            "order": 7,
+            "type": "response",
+            "source": "FE",
+            "target": "USER",
+            "action": "Hiển thị phiên đã hoàn tất và liên kết xem chi tiết",
+            "branch_id": null,
+            "reply_to_interaction_id": "S8-I1",
+            "expects_response": false,
+            "evidence_refs": ["e14"]
+          }
+        ],
+        "processing": [
+          "Trạng thái danh tính cuối cùng của phiên được lưu trong bản tóm tắt lượt chạy nhận diện."
+        ],
+        "branches": [],
+        "result": "Phiên giám sát được hoàn tất, lưu kết quả và hiển thị liên kết xem chi tiết phiên cho người dùng."
+      }
+    ],
+    "fragments": [
+      {
+        "fragment_id": "F1",
+        "type": "alt",
+        "label": "Kết quả đăng ký khuôn mặt",
+        "parent_fragment_id": null,
+        "operands": [
+          {
+            "operand_id": "F1-O1",
+            "label": "Đăng ký thành công",
+            "branch_id": "S3-B1",
+            "interaction_ids": ["S3-I4", "S3-I5", "S3-I6", "S3-I7"]
+          },
+          {
+            "operand_id": "F1-O2",
+            "label": "Không có ảnh mẫu hoặc định dạng không hợp lệ",
+            "branch_id": "S3-B2",
+            "interaction_ids": ["S3-I8", "S3-I9"]
+          },
+          {
+            "operand_id": "F1-O3",
+            "label": "Bộ xác thực chưa sẵn sàng",
+            "branch_id": "S3-B3",
+            "interaction_ids": ["S3-I10", "S3-I11"]
+          },
+          {
+            "operand_id": "F1-O4",
+            "label": "Không tạo được đặc trưng khuôn mặt hợp lệ",
+            "branch_id": "S3-B4",
+            "interaction_ids": ["S3-I12", "S3-I13", "S3-I14"]
+          }
+        ]
+      },
+      {
+        "fragment_id": "F2",
+        "type": "opt",
+        "label": "Xóa đăng ký khuôn mặt khi tài xế đã có hồ sơ",
+        "parent_fragment_id": null,
+        "operands": [
+          {
+            "operand_id": "F2-O1",
+            "label": "Người dùng chọn xóa đăng ký khuôn mặt",
+            "branch_id": null,
+            "interaction_ids": ["S4-I1", "S4-I2", "S4-I3", "S4-I4", "S4-I5", "S4-I6"]
+          }
+        ]
+      },
+      {
+        "fragment_id": "F3",
+        "type": "alt",
+        "label": "Kết quả khởi động phiên giám sát",
+        "parent_fragment_id": null,
+        "operands": [
+          {
+            "operand_id": "F3-O1",
+            "label": "Phiên khởi động thành công",
+            "branch_id": "S6-B1",
+            "interaction_ids": ["S6-I6", "S6-I7"]
+          },
+          {
+            "operand_id": "F3-O2",
+            "label": "Không khởi động được phiên",
+            "branch_id": "S6-B2",
+            "interaction_ids": ["S6-I8", "S6-I9"]
+          }
+        ]
+      },
+      {
+        "fragment_id": "F4",
+        "type": "loop",
+        "label": "Mỗi giây trong khi phiên giám sát đang chạy",
+        "parent_fragment_id": null,
+        "operands": [
+          {
+            "operand_id": "F4-O1",
+            "label": "Xác thực danh tính khuôn mặt lặp lại",
+            "branch_id": null,
+            "interaction_ids": ["S7-I1", "S7-I2", "S7-I3", "S7-I4", "S7-I5", "S7-I6", "S7-I7", "S7-I8"]
+          }
+        ]
+      },
+      {
+        "fragment_id": "F5",
+        "type": "alt",
+        "label": "Kết quả so sánh khuôn mặt",
+        "parent_fragment_id": "F4",
+        "operands": [
+          {
+            "operand_id": "F5-O1",
+            "label": "Khuôn mặt khớp",
+            "branch_id": "S7-B1",
+            "interaction_ids": ["S7-I1", "S7-I2"]
+          },
+          {
+            "operand_id": "F5-O2",
+            "label": "Khuôn mặt không khớp",
+            "branch_id": "S7-B2",
+            "interaction_ids": ["S7-I3", "S7-I4"]
+          },
+          {
+            "operand_id": "F5-O3",
+            "label": "Tài xẻ chưa đăng ký",
+            "branch_id": "S7-B3",
+            "interaction_ids": ["S7-I5", "S7-I6"]
+          },
+          {
+            "operand_id": "F5-O4",
+            "label": "Bộ xác thực chưa sẵn sàng hoặc lỗi",
+            "branch_id": "S7-B4",
+            "interaction_ids": ["S7-I7", "S7-I8"]
+          }
+        ]
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "evidence_id": "e01",
+      "source_type": "source",
+      "locator": "mddad/driver_routes.py (enroll_driver_face)",
+      "summary": "Nhận ảnh mẫu từ camera hoặc tải lên, kiểm tra định dạng jpg/jpeg/png/webp, tối đa 12 mẫu, kiểm tra bộ xác thực, trích xuất đặc trưng khuôn mặt, gộp trung bình, lưu hồ sơ tài xế và sinh trắc học, ghi nhật ký, thông báo kết quả."
+    },
+    {
+      "evidence_id": "e02",
+      "source_type": "source",
+      "locator": "mddad/driver_routes.py (driver_detail, delete_driver_face_enrollment, select_driver)",
+      "summary": "Màn hình chi tiết tài xế, route xóa đăng ký khuôn mặt và route chọn tài xế hiện tại."
+    },
+    {
+      "evidence_id": "e03",
+      "source_type": "source",
+      "locator": "mddad/face_identity.py",
+      "summary": "Bộ xác thực khuôn mặt: cắt khuôn mặt, trích xuất đặc trưng 128 chiều, so sánh khoảng cách với ngưỡng, gộp đặc trưng trung bình và đo độ nhất quán."
+    },
+    {
+      "evidence_id": "e04",
+      "source_type": "config",
+      "locator": "config.py",
+      "summary": "Đường dẫn mô hình phát hiện và xác thực khuôn mặt, ngưỡng khớp mặc định 0.94, thư mục lưu ảnh đăng ký."
+    },
+    {
+      "evidence_id": "e05",
+      "source_type": "source",
+      "locator": "mddad/driver_safety_v1.py (model_readiness)",
+      "summary": "Trạng thái sẵn sàng của bộ xác thực khuôn mặt: artifact có sẵn, runtime khả dụng, ngưỡng khớp, trạng thái identity_ready."
+    },
+    {
+      "evidence_id": "e06",
+      "source_type": "source",
+      "locator": "mddad/repositories.py",
+      "summary": "Các hàm lưu ảnh mẫu, cập nhật hồ sơ sinh trắc học, vô hiệu hóa hồ sơ sinh trắc học và ghi nhật ký audit."
+    },
+    {
+      "evidence_id": "e07",
+      "source_type": "schema",
+      "locator": "mddad/schema.sql + mddad/database.py",
+      "summary": "Bảng drivers chứa face_embedding_json, face_enrolled_at, face_enrollment_image_path; bảng driver_biometrics, media_assets, app_audit_logs; migration thêm cột danh tính khuôn mặt."
+    },
+    {
+      "evidence_id": "e08",
+      "source_type": "source",
+      "locator": "templates/driver_detail.html",
+      "summary": "Panel đăng ký khuôn mặt: trạng thái bộ xác thực, trạng thái đăng ký, ngưỡng khớp, nút mở camera, chụp mẫu theo hướng dẫn, tải ảnh lên, nút Đăng ký và Xóa đăng ký."
+    },
+    {
+      "evidence_id": "e09",
+      "source_type": "source",
+      "locator": "static/js/face_enrollment.js",
+      "summary": "Mở camera, chụp tự động sáu mẫu theo hướng dẫn góc chụp, tạo ảnh thu nhỏ, gửi mẫu kèm thông tin góc chụp."
+    },
+    {
+      "evidence_id": "e10",
+      "source_type": "source",
+      "locator": "mddad/sockets.py",
+      "summary": "Nhận yêu cầu bắt đầu và dừng phiên giám sát realtime qua kênh thời gian thực."
+    },
+    {
+      "evidence_id": "e11",
+      "source_type": "source",
+      "locator": "mddad/realtime_monitor.py (_run_driver_safety_v1)",
+      "summary": "Nạp hồ sơ đăng ký khuôn mặt, xác định trạng thái danh tính khởi tạo, mỗi giây trích xuất và so sánh đặc trưng khuôn mặt, cập nhật trạng thái danh tính, gửi thông báo realtime."
+    },
+    {
+      "evidence_id": "e12",
+      "source_type": "source",
+      "locator": "mddad/realtime_monitor.py (session, model_predictions, realtime_completed)",
+      "summary": "Tạo phiên giám sát, ghi nhận mô hình xác thực khuôn mặt tham gia, lưu kết quả nhận diện kèm trạng thái danh tính, hoàn tất phiên và thông báo."
+    },
+    {
+      "evidence_id": "e13",
+      "source_type": "source",
+      "locator": "mddad/realtime_routes.py",
+      "summary": "Màn hình giám sát realtime hiển thị tài xế hiện tại, cấu hình và trạng thái mô hình."
+    },
+    {
+      "evidence_id": "e14",
+      "source_type": "source",
+      "locator": "templates/driver_safety_realtime.html + static/js/driver_safety_realtime.js",
+      "summary": "Mục xác thực danh tính trên màn hình giám sát, nút bắt đầu/dừng, ánh xạ trạng thái danh tính sang nhãn hiển thị (Đúng tài xế, Sai tài xế, Chưa đăng ký, Chưa sẵn sàng, Lỗi xác thực)."
+    },
+    {
+      "evidence_id": "e15",
+      "source_type": "documentation",
+      "locator": "README.md",
+      "summary": "Tài liệu README ghi chú cũ cho biết luồng đăng ký/so khớp khuôn mặt chưa được tích hợp vào runtime; tuy nhiên source hiện tại đã tích hợp đầy đủ luồng đăng ký và xác thực realtime."
+    }
+  ]
+}

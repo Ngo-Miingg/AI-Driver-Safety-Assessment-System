@@ -7,8 +7,10 @@ from flask import Response, current_app, g, jsonify, render_template, session, s
 
 from .auth import login_required
 from .database import get_db
-from .model_options import behavior_model_options, phone_detector_options
+from .model_options import behavior_model_options
 from .realtime_monitor import realtime_manager
+from .realtime_monitor import _configure_capture
+from .driver_safety_v1 import model_readiness
 
 
 def _get_active_driver():
@@ -26,8 +28,10 @@ def _get_active_driver():
     ).fetchone()
 
 
-def _generate_mjpeg_frames(camera_index: int, user_id: int):
+def _generate_mjpeg_frames(camera_index: int, user_id: int, app):
     cap = None
+    idle_feed_fps = max(float(app.config.get("REALTIME_IDLE_FEED_FPS", 12.0)), 1.0)
+    idle_feed_interval = 1.0 / idle_feed_fps
     try:
         while True:
             if realtime_manager.has_active_session_for_user(user_id):
@@ -40,7 +44,7 @@ def _generate_mjpeg_frames(camera_index: int, user_id: int):
                         b"--frame\r\n"
                         b"Content-Type: image/jpeg\r\n\r\n" + payload + b"\r\n"
                     )
-                time.sleep(0.05)
+                time.sleep(idle_feed_interval)
                 continue
 
             if cap is None:
@@ -50,13 +54,32 @@ def _generate_mjpeg_frames(camera_index: int, user_id: int):
                     cap = None
                     time.sleep(0.2)
                     continue
+                _configure_capture(cap, float(app.config.get("REALTIME_TARGET_FPS", 30.0)), app=app)
 
             ok, frame = cap.read()
             if not ok or frame is None:
                 time.sleep(0.05)
                 continue
 
-            ok, buffer = cv2.imencode(".jpg", frame)
+            frame = cv2.resize(
+                frame,
+                (
+                    int(app.config.get("REALTIME_PREVIEW_WIDTH", 640)),
+                    max(
+                        1,
+                        int(
+                            frame.shape[0]
+                            * (float(app.config.get("REALTIME_PREVIEW_WIDTH", 640)) / max(frame.shape[1], 1))
+                        ),
+                    ),
+                ),
+                interpolation=cv2.INTER_AREA,
+            ) if frame.shape[1] > int(app.config.get("REALTIME_PREVIEW_WIDTH", 640)) else frame
+            ok, buffer = cv2.imencode(
+                ".jpg",
+                frame,
+                [int(cv2.IMWRITE_JPEG_QUALITY), int(app.config.get("REALTIME_PREVIEW_JPEG_QUALITY", 72))],
+            )
             if not ok:
                 continue
 
@@ -65,7 +88,7 @@ def _generate_mjpeg_frames(camera_index: int, user_id: int):
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n\r\n" + payload + b"\r\n"
             )
-            time.sleep(0.03)
+            time.sleep(idle_feed_interval)
     finally:
         if cap is not None:
             cap.release()
@@ -94,21 +117,25 @@ def register_realtime_routes(app):
     @login_required
     def realtime():
         active_driver = _get_active_driver()
+        # The primary realtime demo uses only the action model for texting and
+        # calling. Standalone phone detection remains available elsewhere, but
+        # is intentionally excluded from this workflow.
+        selected_phone_backend = "disabled"
         return render_template(
-            "realtime.html",
+            "driver_safety_realtime.html",
             active_driver=active_driver,
             realtime_camera_index=app.config.get("REALTIME_CAMERA_INDEX", 0),
             behavior_model_options=behavior_model_options(),
-            phone_detector_options=phone_detector_options(app, include_disabled=True),
-            selected_behavior_backend=app.config.get("REALTIME_BEHAVIOR_MODEL_BACKEND", "mmrt_multimodal_full_v2_t4x2"),
-            selected_phone_backend="disabled",
+            selected_behavior_backend="driver_safety_v1",
+            selected_phone_backend=selected_phone_backend,
+            model_status=model_readiness(app),
         )
 
     @app.get("/realtime/feed")
     @login_required
     def realtime_feed():
         return Response(
-            stream_with_context(_generate_mjpeg_frames(app.config.get("REALTIME_CAMERA_INDEX", 0), g.user["id"])),
+            stream_with_context(_generate_mjpeg_frames(app.config.get("REALTIME_CAMERA_INDEX", 0), g.user["id"], app)),
             mimetype="multipart/x-mixed-replace; boundary=frame",
         )
 

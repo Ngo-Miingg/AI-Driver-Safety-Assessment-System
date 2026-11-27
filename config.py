@@ -23,14 +23,93 @@ class Config:
     DEMO_USERNAME = os.environ.get("DEMO_USERNAME", "admin")
     DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "admin123")
     ALLOWED_VIDEO_EXTENSIONS = {"mp4", "avi", "mov", "mkv"}
-    MULTIMODAL_MODEL_BACKEND = os.environ.get("MULTIMODAL_MODEL_BACKEND", "mmrt_multimodal_full_v2_t4x2")
+    # Research/demo routes are retained for reproducibility, but they are not
+    # part of the product runtime unless explicitly enabled.
+    ENABLE_LEGACY_RESEARCH_ROUTES = os.environ.get(
+        "ENABLE_LEGACY_RESEARCH_ROUTES", "0"
+    ) == "1"
+    # Driver Safety v1 is the active product pipeline. Legacy multimodal
+    # artifacts remain on disk only for historical sessions and reports.
+    DRIVER_SAFETY_MODEL_DIR = os.environ.get(
+        "DRIVER_SAFETY_MODEL_DIR", str(BASE_DIR / "models" / "driver_safety_v1")
+    )
+    DRIVER_SAFETY_FACE_DETECTOR_PATH = os.environ.get(
+        "DRIVER_SAFETY_FACE_DETECTOR_PATH", str(Path(DRIVER_SAFETY_MODEL_DIR) / "face_detection.pt")
+    )
+    DRIVER_SAFETY_FACE_VERIFIER_PATH = os.environ.get(
+        "DRIVER_SAFETY_FACE_VERIFIER_PATH", str(Path(DRIVER_SAFETY_MODEL_DIR) / "face_verification.h5")
+    )
+    DRIVER_SAFETY_FACE_VERIFY_THRESHOLD = float(os.environ.get("DRIVER_SAFETY_FACE_VERIFY_THRESHOLD", "0.94"))
+    DRIVER_SAFETY_FACE_ENROLLMENT_DIR = os.environ.get(
+        "DRIVER_SAFETY_FACE_ENROLLMENT_DIR", str(BASE_DIR / "uploads" / "face_enrollment")
+    )
+    DRIVER_SAFETY_DROWSINESS_MODEL_PATH = os.environ.get(
+        "DRIVER_SAFETY_DROWSINESS_MODEL_PATH", str(Path(DRIVER_SAFETY_MODEL_DIR) / "best_model.h5")
+    )
+    DRIVER_SAFETY_DROWSINESS_OPENVINO_PATH = os.environ.get(
+        "DRIVER_SAFETY_DROWSINESS_OPENVINO_PATH",
+        str(Path(DRIVER_SAFETY_MODEL_DIR) / "openvino" / "drowsiness.xml"),
+    )
+    DRIVER_SAFETY_FACE_VERIFIER_OPENVINO_PATH = os.environ.get(
+        "DRIVER_SAFETY_FACE_VERIFIER_OPENVINO_PATH",
+        str(Path(DRIVER_SAFETY_MODEL_DIR) / "openvino" / "face_verification.xml"),
+    )
+    DRIVER_SAFETY_SCALER_PATH = os.environ.get(
+        "DRIVER_SAFETY_SCALER_PATH", str(Path(DRIVER_SAFETY_MODEL_DIR) / "scaler.joblib")
+    )
+    # Values below come from the report and its original webcam inference code.
+    DRIVER_SAFETY_FACE_CONFIDENCE = float(os.environ.get("DRIVER_SAFETY_FACE_CONFIDENCE", "0.251"))
+    DRIVER_SAFETY_FACE_IMGSZ = int(os.environ.get("DRIVER_SAFETY_FACE_IMGSZ", "640"))
+    DRIVER_SAFETY_FACE_DETECTOR_FPS = float(os.environ.get("DRIVER_SAFETY_FACE_DETECTOR_FPS", "2.0"))
+    DRIVER_SAFETY_FACE_DEVICE = os.environ.get("DRIVER_SAFETY_FACE_DEVICE", "auto")
+    DRIVER_SAFETY_SEQUENCE_LENGTH = int(os.environ.get("DRIVER_SAFETY_SEQUENCE_LENGTH", "15"))
+    DRIVER_SAFETY_INFERENCE_STRIDE = int(os.environ.get("DRIVER_SAFETY_INFERENCE_STRIDE", "2"))
+    DRIVER_SAFETY_FEATURE_GAP_RESET_SECONDS = float(
+        # Inference latency must not erase a valid temporal clip.
+        os.environ.get("DRIVER_SAFETY_FEATURE_GAP_RESET_SECONDS", "2.0")
+    )
+    DRIVER_SAFETY_DECISION_THRESHOLD = float(os.environ.get("DRIVER_SAFETY_DECISION_THRESHOLD", "0.5"))
+    DRIVER_SAFETY_ALERT_THRESHOLD = float(os.environ.get("DRIVER_SAFETY_ALERT_THRESHOLD", "0.7"))
+    DRIVER_SAFETY_EVENT_CONFIRM_SECONDS = float(os.environ.get("DRIVER_SAFETY_EVENT_CONFIRM_SECONDS", "3.0"))
+    DRIVER_ACTION_MODEL_DIR = os.environ.get(
+        "DRIVER_ACTION_MODEL_DIR",
+        str(BASE_DIR / "models" / "openvino_driver_action_adas_0002" / "FP16-INT8"),
+    )
+    DRIVER_ACTION_ENCODER_PATH = os.environ.get(
+        "DRIVER_ACTION_ENCODER_PATH",
+        str(Path(DRIVER_ACTION_MODEL_DIR) / "driver-action-recognition-adas-0002-encoder.xml"),
+    )
+    DRIVER_ACTION_DECODER_PATH = os.environ.get(
+        "DRIVER_ACTION_DECODER_PATH",
+        str(Path(DRIVER_ACTION_MODEL_DIR) / "driver-action-recognition-adas-0002-decoder.xml"),
+    )
+    DRIVER_ACTION_DEVICE = os.environ.get("DRIVER_ACTION_DEVICE", "auto")
+    DRIVER_ACTION_WINDOW_SIZE = int(os.environ.get("DRIVER_ACTION_WINDOW_SIZE", "16"))
+    DRIVER_ACTION_SAMPLE_STRIDE_FRAMES = int(os.environ.get("DRIVER_ACTION_SAMPLE_STRIDE_FRAMES", "2"))
+    DRIVER_ACTION_INFERENCE_STRIDE = int(os.environ.get("DRIVER_ACTION_INFERENCE_STRIDE", "1"))
+    DRIVER_ACTION_LABEL_SMOOTHING_FRAMES = int(
+        os.environ.get("DRIVER_ACTION_LABEL_SMOOTHING_FRAMES", "15")
+    )
+    DRIVER_ACTION_CONFIDENCE_THRESHOLD = float(os.environ.get("DRIVER_ACTION_CONFIDENCE_THRESHOLD", "0.45"))
+    # The action model is prone to confusing neutral cabin posture with its
+    # eating/drinking class. Require stronger evidence for this class only.
+    DRIVER_ACTION_DRINKING_EATING_THRESHOLD = float(
+        os.environ.get("DRIVER_ACTION_DRINKING_EATING_THRESHOLD", "0.70")
+    )
+    # Keep the model probability intact, but give this easily-confused class
+    # a lower contribution to the business risk recommendation.
+    DRIVER_ACTION_DRINKING_EATING_RISK_MULTIPLIER = float(
+        os.environ.get("DRIVER_ACTION_DRINKING_EATING_RISK_MULTIPLIER", "0.5")
+    )
+    DRIVER_ACTION_EVENT_CONFIRM_SECONDS = float(os.environ.get("DRIVER_ACTION_EVENT_CONFIRM_SECONDS", "2.0"))
+    MULTIMODAL_MODEL_BACKEND = os.environ.get("MULTIMODAL_MODEL_BACKEND", "driver_safety_v1")
     MULTIMODAL_MODEL_PATH = os.environ.get(
         "MULTIMODAL_MODEL_PATH",
-        str(Path("D:/Downloads/mmrt_artifacts_bundle.zip")),
+        str(BASE_DIR / "models" / "mmrt_artifacts_bundle"),
     )
     MMRT_V2_MODEL_PATH = os.environ.get(
         "MMRT_V2_MODEL_PATH",
-        str(Path("D:/Downloads/mmrt_artifacts_bundle.zip")),
+        str(BASE_DIR / "models" / "mmrt_artifacts_bundle"),
     )
     MMRT_V2_DEVICE = os.environ.get("MMRT_V2_DEVICE", "cpu")
     MMRT_V2_CLIP_SECONDS = float(os.environ.get("MMRT_V2_CLIP_SECONDS", "3.0"))
@@ -53,7 +132,7 @@ class Config:
         "MULTIMODAL_LABELS",
         "normal_driving,phone_interaction,phone_calling,in_vehicle_display_interaction,eating_distraction,drinking_distraction,visual_posture_distraction",
     )
-    PHONE_DETECTOR_BACKEND = os.environ.get("PHONE_DETECTOR_BACKEND", "rtdetr_finetuned")
+    PHONE_DETECTOR_BACKEND = os.environ.get("PHONE_DETECTOR_BACKEND", "disabled")
     YOLO_MODEL_PATH = os.environ.get("YOLO_MODEL_PATH", str(BASE_DIR / "models" / "yolo11n.pt"))
     YOLO_PRETRAINED_MODEL_PATH = os.environ.get("YOLO_PRETRAINED_MODEL_PATH", YOLO_MODEL_PATH)
     YOLO_FINETUNED_MODEL_PATH = os.environ.get(
@@ -64,22 +143,28 @@ class Config:
         "RTDETR_MODEL_PATH",
         str(BASE_DIR / "models" / "phone_rtdetr_l.pt"),
     )
-    RTDETR_LIGHT_COMPARE_MODEL_PATH = os.environ.get(
-        "RTDETR_LIGHT_COMPARE_MODEL_PATH",
-        str(BASE_DIR / "models" / "phone_rtdetr_l_light_compare.pt"),
-    )
     YOLO_CONFIDENCE_THRESHOLD = float(os.environ.get("YOLO_CONFIDENCE_THRESHOLD", "0.35"))
     YOLO_SAMPLE_FPS = float(os.environ.get("YOLO_SAMPLE_FPS", "5.0"))
     REALTIME_CAMERA_INDEX = int(os.environ.get("REALTIME_CAMERA_INDEX", "0"))
-    REALTIME_TARGET_FPS = float(os.environ.get("REALTIME_TARGET_FPS", "12.0"))
-    REALTIME_BEHAVIOR_MODEL_BACKEND = os.environ.get("REALTIME_BEHAVIOR_MODEL_BACKEND", "mmrt_multimodal_full_v2_t4x2")
+    REALTIME_CAMERA_WIDTH = int(os.environ.get("REALTIME_CAMERA_WIDTH", "640"))
+    REALTIME_CAMERA_HEIGHT = int(os.environ.get("REALTIME_CAMERA_HEIGHT", "480"))
+    REALTIME_TARGET_FPS = float(os.environ.get("REALTIME_TARGET_FPS", "30.0"))
+    REALTIME_IDLE_FEED_FPS = float(os.environ.get("REALTIME_IDLE_FEED_FPS", "12.0"))
+    REALTIME_PREVIEW_MAX_FPS = float(os.environ.get("REALTIME_PREVIEW_MAX_FPS", "12.0"))
+    REALTIME_PREVIEW_WIDTH = int(os.environ.get("REALTIME_PREVIEW_WIDTH", "640"))
+    REALTIME_PREVIEW_JPEG_QUALITY = int(os.environ.get("REALTIME_PREVIEW_JPEG_QUALITY", "72"))
+    REALTIME_BEHAVIOR_MODEL_BACKEND = os.environ.get("REALTIME_BEHAVIOR_MODEL_BACKEND", "driver_safety_v1")
     REALTIME_ENABLE_YOLO = os.environ.get("REALTIME_ENABLE_YOLO", "0") == "1"
     REALTIME_YOLO_SAMPLE_FPS = float(os.environ.get("REALTIME_YOLO_SAMPLE_FPS", "1.0"))
     REALTIME_YOLO_CONFIDENCE_THRESHOLD = float(
         os.environ.get("REALTIME_YOLO_CONFIDENCE_THRESHOLD", os.environ.get("YOLO_CONFIDENCE_THRESHOLD", "0.35"))
     )
     REALTIME_YOLO_MODEL_PATH = os.environ.get("REALTIME_YOLO_MODEL_PATH", str(BASE_DIR / "models" / "yolo11n.pt"))
-    REALTIME_PHONE_DETECTOR_BACKEND = os.environ.get("REALTIME_PHONE_DETECTOR_BACKEND", "yolo_finetuned")
+    # Realtime phone decisions currently come from the action-recognition
+    # model. Keep the standalone detector available for separate testing, but
+    # do not mix its signal into the main behavior demo.
+    REALTIME_PHONE_DETECTOR_BACKEND = os.environ.get("REALTIME_PHONE_DETECTOR_BACKEND", "disabled")
+    REALTIME_PHONE_CONTEXT_FILTER = os.environ.get("REALTIME_PHONE_CONTEXT_FILTER", "1") == "1"
     REALTIME_ENABLE_SNAPSHOT_PREVIEW = os.environ.get("REALTIME_ENABLE_SNAPSHOT_PREVIEW", "1") == "1"
     REALTIME_SNAPSHOT_FPS = float(os.environ.get("REALTIME_SNAPSHOT_FPS", "3.0"))
     REALTIME_SNAPSHOT_WIDTH = int(os.environ.get("REALTIME_SNAPSHOT_WIDTH", "320"))
@@ -87,9 +172,26 @@ class Config:
     EAR_THRESHOLD = float(os.environ.get("EAR_THRESHOLD", "0.23"))
     MAR_THRESHOLD = float(os.environ.get("MAR_THRESHOLD", "0.60"))
     EYE_CLOSURE_MIN_DURATION = float(os.environ.get("EYE_CLOSURE_MIN_DURATION", "1.0"))
-    YAWN_MIN_DURATION = float(os.environ.get("YAWN_MIN_DURATION", "1.2"))
-    LOOKING_AWAY_MIN_DURATION = float(os.environ.get("LOOKING_AWAY_MIN_DURATION", "1.5"))
-    HEAD_DOWN_MIN_DURATION = float(os.environ.get("HEAD_DOWN_MIN_DURATION", "1.2"))
+    YAWN_MIN_DURATION = float(os.environ.get("YAWN_MIN_DURATION", "2.0"))
+    LOOKING_AWAY_MIN_DURATION = float(os.environ.get("LOOKING_AWAY_MIN_DURATION", "2.0"))
+    HEAD_DOWN_MIN_DURATION = float(os.environ.get("HEAD_DOWN_MIN_DURATION", "2.0"))
+    FACE_LOOKING_AWAY_OFFSET_THRESHOLD = float(
+        os.environ.get("FACE_LOOKING_AWAY_OFFSET_THRESHOLD", "0.07")
+    )
+    # Looking-away is decided from calibrated head yaw, not instantaneous
+    # motion. The offset threshold above remains as a compatibility fallback.
+    FACE_LOOKING_AWAY_YAW_THRESHOLD_DEGREES = float(
+        os.environ.get("FACE_LOOKING_AWAY_YAW_THRESHOLD_DEGREES", "20.0")
+    )
+    FACE_LOOKING_AWAY_YAW_RELEASE_DEGREES = float(
+        os.environ.get("FACE_LOOKING_AWAY_YAW_RELEASE_DEGREES", "15.0")
+    )
+    FACE_HEAD_DOWN_OFFSET_THRESHOLD = float(
+        os.environ.get("FACE_HEAD_DOWN_OFFSET_THRESHOLD", "0.08")
+    )
+    FACE_BEHAVIOR_CALIBRATION_SAMPLES = int(
+        os.environ.get("FACE_BEHAVIOR_CALIBRATION_SAMPLES", "20")
+    )
     FACE_MISSING_MIN_DURATION = float(os.environ.get("FACE_MISSING_MIN_DURATION", "2.0"))
     UPLOADED_SAMPLE_FPS = float(os.environ.get("UPLOADED_SAMPLE_FPS", "5.0"))
     PHONE_DRIVER_ROI = os.environ.get("PHONE_DRIVER_ROI", "0,0,1,1")

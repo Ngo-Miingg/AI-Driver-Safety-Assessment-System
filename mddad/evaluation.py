@@ -8,6 +8,7 @@ EVENT_TYPES = (
     "eating_distraction",
     "drinking_distraction",
     "visual_posture_distraction",
+    "drowsiness",
     "eye_closure",
     "yawn",
     "phone_usage",

@@ -6,8 +6,6 @@
 {% block content %}
 <section class="realtime-shell realtime-shell-classic">
   {% if active_driver %}
-  <input id="behavior-model-select" type="hidden" value="{{ selected_behavior_backend }}">
-
   <div class="page-heading">
     <div>
       <p class="realtime-kicker">{{ _('app.eyebrow', 'AI Driver Safety Assessment') }}</p>
@@ -32,11 +30,17 @@
     <div class="metric-grid" style="grid-template-columns: minmax(0, 1fr);">
       <label>
         <span class="muted">{{ _('realtime.behavior_model', 'Behavior model') }}</span>
-        <input type="text" value="MMRT multimodal full v2 t4x2" readonly>
+        <select id="behavior-model-select">
+          {% for option in behavior_model_options %}
+          <option value="{{ option.value }}" {% if option.value == selected_behavior_backend %}selected{% endif %}>
+            {{ _(option.label_key, option.label) }}
+          </option>
+          {% endfor %}
+        </select>
       </label>
     </div>
     <p class="muted">
-      {{ _('realtime.mmrt_phone_note', 'Phone usage is recognized inside the MMRT multimodal behavior model. The standalone YOLO/RT-DETR phone detector is disabled in realtime.') }}
+      {{ _('realtime.mmrt_phone_note', 'Phone use is recognized inside the multimodal behavior model. Standalone phone detectors are disabled in the main realtime demo.') }}
     </p>
   </section>
 
@@ -113,13 +117,24 @@
         <span>{{ _('realtime.phone_use_state', 'Phone use') }}</span>
         <strong id="metric-phone-detected-status">--</strong>
       </div>
+      <div id="indicator-drowsiness" class="indicator">
+        <span>{{ _('realtime.drowsiness_state', 'Drowsiness model') }}</span>
+        <strong id="metric-drowsiness-status">--</strong>
+      </div>
     </div>
   </section>
 
   <section class="realtime-layout">
     <article class="panel realtime-stage-panel">
       <div class="realtime-stage-frame">
-        <img class="realtime-stream" src="{{ url_for('realtime_feed') }}" alt="{{ _('realtime.live_preview_alt', 'Live webcam stream') }}">
+        <p id="realtime-stream-placeholder" class="muted realtime-stream-placeholder">
+          {{ _('realtime.camera_waiting_start', 'Camera is off. Press Start Monitoring to open the realtime stream.') }}
+        </p>
+        <img
+          class="realtime-stream"
+          data-feed-url="{{ url_for('realtime_feed') }}"
+          alt="{{ _('realtime.live_preview_alt', 'Live webcam stream') }}"
+        >
       </div>
 
       <div class="two-column realtime-stage-secondary">
@@ -170,7 +185,7 @@
           </div>
           <div class="realtime-mini-stat">
             <span>{{ _('realtime.temporal_buffer', 'Temporal Buffer') }}</span>
-            <strong id="metric-temporal-buffer-size">--</strong>
+            <strong id="metric-temporal-buffer-size-side">--</strong>
           </div>
         </div>
       </section>
@@ -189,10 +204,6 @@
             <span>{{ _('realtime.skeleton_view', 'Skeleton view') }}</span>
             <strong id="metric-skeleton-state">--</strong>
           </div>
-          <div class="realtime-mini-stat">
-            <span>{{ _('realtime.temporal_buffer', 'Temporal Buffer') }}</span>
-            <strong id="metric-temporal-buffer-size">--</strong>
-          </div>
         </div>
         <p class="muted" id="metric-live-mode-note">--</p>
       </section>
@@ -202,14 +213,6 @@
           <div class="realtime-mini-stat">
             <span>{{ _('realtime.active_labels', 'Active labels') }}</span>
             <strong id="metric-active-labels">--</strong>
-          </div>
-          <div class="realtime-mini-stat">
-            <span>EAR</span>
-            <strong id="metric-ear">--</strong>
-          </div>
-          <div class="realtime-mini-stat">
-            <span>MAR</span>
-            <strong id="metric-mar">--</strong>
           </div>
         </div>
       </section>
@@ -258,5 +261,5 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/realtime.js') }}?v=20260721-live-observation"></script>
 {% endblock %}

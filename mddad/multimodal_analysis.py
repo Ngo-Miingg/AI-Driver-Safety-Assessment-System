@@ -5,9 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .activity7_infer import Activity7Package
 from .analysis_models import Event
-from .mmrt_v2_infer import MMRTV2Package
 from .risk_engine import contribution_for_event
 
 
@@ -177,7 +175,13 @@ def _load_package(model_config: MultimodalModelConfig):
         )
     package_path = model_config.package_path if model_config.package_path.exists() else model_config.model_path
     if _is_mmrt_backend(model_config.backend):
+        # Legacy research packages depend on PyTorch and torchvision. Import
+        # them only when a legacy analysis route is explicitly executed.
+        from .mmrt_v2_infer import MMRTV2Package
+
         return MMRTV2Package(package_path, device=model_config.device)
+    from .activity7_infer import Activity7Package
+
     return Activity7Package(package_path, device=model_config.device, decision_mode=model_config.decision_mode)
 
 

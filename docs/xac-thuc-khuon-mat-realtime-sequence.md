@@ -1,0 +1,42 @@
+# Sơ đồ sequence: Giám sát và xác thực khuôn mặt realtime
+
+Mô tả luồng giám sát tài xế theo thời gian thực: bắt đầu phiên, mỗi 1 giây xác thực khuôn mặt so với embedding đã đăng ký, cập nhật trạng thái lên màn hình và lưu phiên khi dừng (nguồn: `business_flow_xac-thuc-khuon-mat.json`).
+
+```mermaid
+sequenceDiagram
+    actor User as Người dùng
+    participant FE as Giao diện
+    participant BE as Backend
+    participant DB as Cơ sở dữ liệu
+
+    User->>FE: 1. Bấm Bắt đầu giám sát
+    FE->>BE: Yêu cầu bắt đầu phiên giám sát
+    alt 1(a). Điều kiện bắt đầu hợp lệ
+        BE->>DB: Đọc embedding đã đăng ký và tạo phiên
+        DB-->>BE: Trả embedding và xác nhận phiên
+        BE-->>FE: Thông báo phiên đang chạy
+        FE-->>User: Hiển thị video trực tiếp
+        loop 2. Xác thực khuôn mặt theo thời gian thực (mỗi 1 giây khi phát hiện khuôn mặt)
+            BE->>BE: Trích embedding và so sánh với embedding đăng ký
+            alt 2(a). Khuôn mặt khớp
+                BE-)FE: Cập nhật trạng thái đã xác thực
+                FE-)User: Hiển thị trạng thái đã xác thực
+            else 2(b). Khuôn mặt không khớp
+                BE-)FE: Cập nhật trạng thái sai tài xế
+                FE-)User: Hiển thị cảnh báo sai tài xế
+            else 2(c). Chưa đăng ký hoặc không khả dụng
+                BE-)FE: Cập nhật trạng thái chưa đăng ký
+                FE-)User: Hiển thị trạng thái chưa đăng ký
+            end
+        end
+        User->>FE: 3. Bấm Dừng giám sát
+        FE->>BE: Yêu cầu dừng phiên giám sát
+        BE->>DB: Lưu phiên, sự kiện và báo cáo
+        DB-->>BE: Xác nhận đã lưu
+        BE-->>FE: Thông báo phiên hoàn tất kèm đường dẫn
+        FE-->>User: Hiển thị thông báo hoàn tất
+    else 1(b). Điều kiện bắt đầu không đạt
+        BE-->>FE: Thông báo không bắt đầu được phiên
+        FE-->>User: Hiển thị thông báo lỗi
+    end
+```

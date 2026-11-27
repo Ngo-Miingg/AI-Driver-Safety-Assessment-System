@@ -1,329 +1,140 @@
-# AI Driver Safety Assessment System
+# Driver Safety Monitoring System
 
-Flask-based driver monitoring and multimodal behavior analysis system for cabin videos and webcam sessions. The project combines:
+Ung dung Flask chay cuc bo de quan ly tai xe, giam sat webcam va ghi nhan
+su kien mat tap trung, buon ngu va su dung dien thoai. Sau giai doan thu
+nghiem nhieu model, du an hien duoc giu theo huong **san pham runtime gon**:
 
-- realtime webcam monitoring with Flask-SocketIO
-- uploaded video analysis
-- driver/session management with SQLite
-- phone detection backends (YOLO / RT-DETR)
-- multimodal behavior inference demos, including MMRT v2 and Activity7 comparison runners
+- `driver_safety_v1`: pipeline chinh cho khuon mat, dac trung thoi gian va
+  phat hien buon ngu.
+- `rtdetr_finetuned`: detector dien thoai doc lap dung de canh bao som va luu
+  evidence bbox.
+- `driver-action-recognition-adas-0002`: model hanh vi theo clip, dung nhu
+  nhanh bo sung de xac nhan ngu canh hanh vi.
 
-This repository is the cleaned source-code version of the project. Large local artifacts such as datasets, trained weights, logs, uploads, and virtual environments are intentionally excluded from Git.
+Nhung bundle nghien cuu cu nhu MMRT, Activity7, VITDD va cac route test phuc
+tap khong con la mot phan cua runtime mac dinh. Chung chi duoc giu lai tren dia
+de doi chieu, bao cao hoac tai lap nghien cuu khi can.
 
-## Main capabilities
+## Runtime hien tai
 
-- User login, local registration, logout, and English/Vietnamese UI switching
-- Driver management with active-driver selection
-- Dashboard, history, reports, evaluation, CSV export, and settings pages
-- Uploaded-video analysis pipeline with:
-  - OpenCV metadata extraction
-  - rule-based / landmark-based behavior analysis
-  - optional phone detection with fine-tuned YOLO or RT-DETR backends
-  - multimodal clip-based model testing
-- Realtime webcam monitoring with:
-  - Flask-SocketIO updates
-  - OpenCV webcam capture
-  - MediaPipe face / pose cues
-  - live risk, safety, alert, event timeline, and snapshot preview
-  - optional phone detector backend selection per session
-- Dedicated demo pages for:
-  - Activity7 comparison demos
-  - MMRT v2 upload demo with per-run JSON logging
+Luot xu ly chinh cua realtime:
 
-## Repository layout
+```text
+Camera -> Face detector -> Face landmarks/features -> Temporal drowsiness model
+       -> 16-frame OpenVINO action model -----------+-> Event manager
+       -> RT-DETR phone presence (early warning) ---+-> Risk + UI
+                                                    `-> SQLite/history/report
+```
+
+Nhung gi dang hoat dong trong app chinh:
+
+- Dang nhap, quan ly va chon tai xe.
+- Webcam realtime qua OpenCV + Flask-SocketIO.
+- YOLO face detector.
+- MediaPipe Face Mesh trich xuat 6 dac trung:
+  `left_ear`, `right_ear`, `mar`, `pitch`, `yaw`, `roll`.
+- `StandardScaler` goc + `best_model.h5` nhan chuoi `15 x 6` de suy luan buon ngu.
+- OpenVINO `driver-action-recognition-adas-0002` cho 9 lop hanh vi theo clip;
+  day la nguon xac nhan su kien hanh vi.
+- RT-DETR-L fine-tuned cho canh bao dien thoai som va bbox; detector nay khong
+  tu tao su kien da xac nhan.
+- Mot temporal event manager duy nhat xac nhan tin hieu lien tuc truoc khi ghi
+  event vao SQLite.
+- Session, event, risk log, history va report luu vao SQLite.
+
+Nhung gi khong con duoc xem la product runtime:
+
+- MMRT full v2 t4x2.
+- Activity7 multimodal package.
+- VITDD behavior branch.
+- MediaPipe/OpenCV rule-only demo cu.
+- YOLO pretrained va cac trang test nghien cuu cu.
+
+## Cau truc chinh
 
 ```text
 MDDAD/
 |-- app.py
 |-- config.py
-|-- requirements.txt
-|-- mddad/                     # Flask app modules, inference helpers, realtime logic
-|-- templates/                 # Jinja templates
-|-- static/                    # CSS / JS / vendor assets
-|-- tools/                     # helper scripts
-|-- docs/                      # handoff notes, reports, slide sources
-|-- kaggle/                    # training notes / Kaggle workflow docs
-|-- tests/                     # test files
-|-- run_model_test_simple.py   # general model test runner
-|-- run_mddad_demo_geom2.py    # Activity7 GEOM2 demo on port 5002
-|-- run_mddad_demo_7class.py   # Activity7 final demo on port 5003
-|-- run_mmrt_v2_demo.py        # MMRT v2 upload demo on port 5004
+|-- mddad/
+|   |-- realtime_monitor.py
+|   |-- realtime_event_manager.py
+|   |-- driver_safety_v1.py
+|   |-- driver_action_openvino.py
+|   |-- face_identity.py
+|   `-- ...
+|-- templates/
+|-- static/
+|-- models/
+|   |-- driver_safety_v1/
+|   |-- openvino_driver_action_adas_0002/
+|   `-- phone_rtdetr_l.pt
+|-- uploads/
+|-- instance/
+`-- tests/
 ```
 
-## Supported model flows
+## Cai dat
 
-### 1. Main app
-
-The main app runs on port `5000` and exposes the full driver-safety system:
-
-- dashboard
-- drivers
-- upload analysis
-- realtime monitoring
-- history / reports / evaluation
-- settings
-
-Current default config points the multimodal upload / realtime behavior backend to:
-
-- `mmrt_multimodal_full_v2_t4x2` for multimodal behavior inference
-- fine-tuned RT-DETR / YOLO options for phone detection
-
-### 2. Activity7 comparison demos
-
-These runners are for comparing the older Activity7 package in two decision modes:
-
-- `run_mddad_demo_geom2.py` -> port `5002`
-- `run_mddad_demo_7class.py` -> port `5003`
-
-Both expose:
-
-- `http://127.0.0.1:<port>/model-test-simple-cam`
-
-### 3. MMRT v2 demo
-
-`run_mmrt_v2_demo.py` starts a dedicated upload demo for:
-
-- `mmrt_multimodal_full_v2_t4x2`
-
-URL:
-
-- `http://127.0.0.1:5004/mmrt-v2-demo`
-
-This page is focused on clean upload-based testing and writes a JSON log for every inference run.
-
-## Model artifacts expected locally
-
-This repository does **not** commit large trained weights. Keep them locally and point config values to the correct paths.
-
-Common local artifacts used during development:
-
-```text
-models/activity7_final_best_model_package.zip
-models/phone_rtdetr_l.pt
-models/phone_rtdetr_l_light_compare.pt
-models/phone_yolo26n.pt
-D:/Downloads/mmrt_artifacts_bundle.zip
-```
-
-The MMRT demo expects the `mmrt_multimodal_full_v2_t4x2` checkpoint bundle to be available inside:
-
-```text
-D:/Downloads/mmrt_artifacts_bundle.zip
-```
-
-If you want a different location, override:
-
-```text
-MMRT_V2_MODEL_PATH
-```
-
-## Tech stack
-
-- Python 3.11
-- Flask
-- Flask-SocketIO
-- SQLite
-- OpenCV
-- MediaPipe
-- PyTorch
-- torchvision
-- librosa
-- Ultralytics
-- HTML / CSS / JavaScript
-
-## Requirements
-
-### Python
-
-- Python 3.11 recommended
-
-### OS
-
-- Windows was the primary development environment
-
-### External tools
-
-- `ffmpeg` must be available in `PATH` for MMRT v2 audio extraction
-- a working webcam is required for realtime testing
-
-## Installation
+Khuyen nghi Python 3.11:
 
 ```powershell
 cd D:\Work\HocKy3\ComputerVision\MDDAD
 python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-## Environment and config
+Neu `Activate.ps1` khong ton tai hoac PowerShell chan script, van co the chay
+truc tiep bang `.\.venv\Scripts\python.exe`.
 
-You can copy settings from:
-
-```text
-.env.example
-```
-
-Important config values live in [config.py](config.py) and include:
-
-- `MULTIMODAL_MODEL_BACKEND`
-- `MMRT_V2_MODEL_PATH`
-- `ACTIVITY7_MODEL_PACKAGE_PATH`
-- `PHONE_DETECTOR_BACKEND`
-- `REALTIME_BEHAVIOR_MODEL_BACKEND`
-- `REALTIME_PHONE_DETECTOR_BACKEND`
-- `REALTIME_TARGET_FPS`
-- `REALTIME_SNAPSHOT_FPS`
-
-## Run the full application
+## Chay ung dung
 
 ```powershell
 cd D:\Work\HocKy3\ComputerVision\MDDAD
 .\.venv\Scripts\python.exe app.py
 ```
 
-Open:
+Mo:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-Demo account:
+Tai khoan demo:
 
 ```text
-username: admin
-password: admin123
+admin / admin123
 ```
 
-## Run the dedicated demos
-
-### Main model test page
+## Kiem tra truoc khi demo
 
 ```powershell
-.\.venv\Scripts\python.exe run_model_test_simple.py
+cd D:\Work\HocKy3\ComputerVision\MDDAD
+.\.venv\Scripts\python.exe -m compileall -q mddad config.py app.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Open:
+Endpoint huu ich:
 
 ```text
-http://127.0.0.1:5001/model-test-simple
+/health
+/debug/camera
+/realtime
 ```
 
-### Activity7 GEOM2 demo
+## Ghi chu cleanup
 
-```powershell
-.\.venv\Scripts\python.exe run_mddad_demo_geom2.py
-```
+Du an hien van con nhieu artifact nghien cuu, script tao slide, notebook Kaggle,
+report va file media. Truoc khi ban giao cho nguoi khac, can chia ro:
 
-Open:
+- source runtime
+- model bundle runtime
+- dataset/train artifact
+- tai lieu bao cao
 
-```text
-http://127.0.0.1:5002/model-test-simple-cam
-```
+Checklist hien tai nam o:
 
-### Activity7 final demo
-
-```powershell
-.\.venv\Scripts\python.exe run_mddad_demo_7class.py
-```
-
-Open:
-
-```text
-http://127.0.0.1:5003/model-test-simple-cam
-```
-
-### MMRT v2 upload demo
-
-```powershell
-.\.venv\Scripts\python.exe run_mmrt_v2_demo.py
-```
-
-Open:
-
-```text
-http://127.0.0.1:5004/mmrt-v2-demo
-```
-
-## Main user flows
-
-### Realtime monitoring
-
-1. Log in
-2. Select an active driver
-3. Open `/realtime`
-4. Choose behavior model and phone detector backend
-5. Start monitoring
-6. Review live risk, safety, warning level, state, event timeline, and snapshot preview
-7. Stop monitoring to save the session and generated report
-
-### Uploaded video analysis
-
-1. Log in and select a driver
-2. Open `/upload`
-3. Upload a cabin video (`mp4`, `avi`, `mov`, `mkv`)
-4. Review metadata
-5. Run available analysis modes
-6. Inspect session detail, events, report, and evaluation metrics
-
-### MMRT v2 demo logging
-
-Each MMRT v2 demo run stores:
-
-- input file path
-- original filename
-- source video metadata
-- clip-by-clip predictions
-- top prediction
-- audio / face / skeleton coverage signals
-
-Run logs are written under:
-
-```text
-uploads/mmrt_v2_demo_runs/
-```
-
-when using the local demo environment.
-
-## Important routes
-
-- `/dashboard`
-- `/drivers`
-- `/upload`
-- `/realtime`
-- `/history`
-- `/reports`
-- `/evaluation`
-- `/evaluation.csv`
-- `/multimodal-test`
-- `/model-test-simple`
-- `/model-test-simple-cam`
-- `/mmrt-v2-demo`
-- `/health`
-
-## Notes on the current architecture
-
-- Realtime monitoring is implemented as a SocketIO-backed background workflow
-- Uploaded-video analysis and dedicated demos run synchronously from request handlers
-- The project contains both legacy Activity7 demo flows and the newer MMRT v2 upload demo
-- Some legacy config names still contain `YOLO` for compatibility with older settings / schema
-
-## Known limitations
-
-- Large model files, datasets, logs, and uploads are not included in this repository
-- MMRT v2 upload inference depends on local artifact availability and `ffmpeg`
-- Realtime behavior quality depends heavily on camera angle, lighting, audio availability, and model selection
-- Some older modules and route names are still kept for comparison / demo continuity
-
-## Suggested next cleanup items
-
-- split legacy comparison demos from the main app into a dedicated `demos/` package
-- add automated smoke tests for the key routes and model-demo pages
-- add a production-oriented dependency / deployment guide
-- normalize remaining mixed-language strings across templates and JS
-
-## Related documentation
-
-- [docs/CHAT_HANDOFF_NEW_CHAT.md](docs/CHAT_HANDOFF_NEW_CHAT.md)
-- [models/phone_detection/README.md](models/phone_detection/README.md)
-- [docs/requirements.md](docs/requirements.md)
-
+- `docs/PROJECT_CLEANUP_AUDIT.md`
+- `docs/PRODUCT_ROADMAP.md`
+- `docs/CLEANUP_FOR_HANDOFF.md`

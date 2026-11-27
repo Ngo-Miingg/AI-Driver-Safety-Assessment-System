@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import subprocess
 from pathlib import Path
 
 
@@ -16,6 +17,15 @@ def _maybe_reexec_into_workspace_venv():
         candidate = candidate.resolve()
         if candidate == current_exe:
             return
+        # A stale project-local virtual environment used to win this search even
+        # when it did not contain the packages required to start the app.
+        probe = subprocess.run(
+            [str(candidate), "-c", "import flask, flask_socketio, cv2, mediapipe, ultralytics, tensorflow, tf_keras, openvino"],
+            capture_output=True,
+            check=False,
+        )
+        if probe.returncode != 0:
+            continue
         os.execv(str(candidate), [str(candidate), __file__, *sys.argv[1:]])
 
 
@@ -32,7 +42,7 @@ if __name__ == "__main__":
     socketio.run(
         app,
         host="127.0.0.1",
-        port=5000,
+        port=int(os.environ.get("PORT", "5000")),
         debug=app.config["DEBUG"],
         use_reloader=app.config.get("USE_RELOADER", False),
         allow_unsafe_werkzeug=True,

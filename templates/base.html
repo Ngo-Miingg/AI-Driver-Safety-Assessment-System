@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ _('app.title', 'AI Driver Safety Assessment System') }}{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}?v=20260729-driver-safety-v1">
   </head>
   <body>
     <header class="site-header">
@@ -30,8 +30,8 @@
       <nav class="shell main-nav" aria-label="Primary navigation">
         <a href="{{ url_for('dashboard') }}">{{ _('nav.dashboard', 'Dashboard') }}</a>
         <a href="{{ url_for('drivers') }}">{{ _('nav.drivers', 'Drivers') }}</a>
-        <a href="{{ url_for('realtime') }}">{{ _('nav.realtime', 'Realtime') }}</a>
-        <a href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Multimodal Video') }}</a>
+        <a href="{{ url_for('realtime') }}">{{ _('nav.realtime', 'Realtime Safety') }}</a>
+        <a href="{{ url_for('upload_video') }}">{{ _('nav.upload', 'Video Analysis') }}</a>
         <a href="{{ url_for('history') }}">{{ _('nav.history', 'History') }}</a>
         <a href="{{ url_for('reports') }}">{{ _('nav.reports', 'Reports') }}</a>
         <a href="{{ url_for('evaluation_page') }}">{{ _('nav.evaluation', 'Evaluation') }}</a>

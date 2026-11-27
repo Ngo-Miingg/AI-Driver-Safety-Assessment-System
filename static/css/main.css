@@ -277,6 +277,106 @@ button:disabled,
   gap: 10px;
 }
 
+.face-enrollment-camera {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fbff;
+}
+
+.face-enrollment-video-wrap {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #081320;
+  aspect-ratio: 16 / 9;
+}
+
+.face-enrollment-video-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.face-enrollment-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  color: #dbeafe;
+  text-align: center;
+  background: #081320;
+}
+
+.face-enrollment-video-wrap.has-stream .face-enrollment-placeholder {
+  display: none;
+}
+
+.face-enrollment-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.face-enrollment-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 8px;
+}
+
+.face-enrollment-thumbs img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.verifier-panel {
+  border-left: 4px solid var(--amber);
+}
+
+.verifier-panel-ready {
+  border-left-color: var(--green);
+  background: linear-gradient(180deg, #f5fbf7 0%, #ffffff 100%);
+}
+
+.verifier-panel-warn {
+  background: linear-gradient(180deg, #fffaf2 0%, #ffffff 100%);
+}
+
+.verifier-state-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0 14px;
+  background: #ffffff;
+}
+
+.verifier-panel-ready .verifier-state-box {
+  border-color: #b7e3cb;
+  background: #effaf3;
+}
+
+.verifier-panel-warn .verifier-state-box {
+  border-color: #f4d4a7;
+  background: #fff7eb;
+}
+
+.verifier-state-box strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
 .page-heading,
 .section-header {
   display: flex;
@@ -422,6 +522,15 @@ button:disabled,
 .indicator.is-risk {
   border-color: #f4b29f;
   background: #fff7ed;
+}
+
+.indicator.is-unknown {
+  border-color: var(--line);
+  background: #f8fafc;
+}
+
+.indicator.is-unknown strong {
+  color: var(--muted);
 }
 
 .badge {
@@ -573,6 +682,54 @@ th {
   display: block;
   height: 100%;
   background: var(--accent);
+}
+
+.dashboard-risk-panel {
+  margin-bottom: 18px;
+}
+
+.dashboard-risk-chart {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  min-height: 180px;
+  align-items: end;
+  padding: 12px 4px 2px;
+}
+
+.dashboard-risk-bar {
+  display: grid;
+  grid-template-rows: 128px auto auto;
+  justify-items: center;
+  gap: 6px;
+}
+
+.dashboard-risk-track {
+  width: 100%;
+  max-width: 72px;
+  height: 128px;
+  display: flex;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #f8fafc, #edf4fb);
+  overflow: hidden;
+}
+
+.dashboard-risk-track span {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  background: linear-gradient(180deg, #ef4444, #f59e0b);
+}
+
+.dashboard-risk-bar strong {
+  font-size: 18px;
+}
+
+.dashboard-risk-bar small {
+  color: var(--muted);
+  font-weight: 700;
 }
 
 .warning-panel {
@@ -1280,14 +1437,31 @@ dd {
 
 .realtime-shell-classic .realtime-stage-frame {
   aspect-ratio: 16 / 9;
+  position: relative;
 }
 
 .realtime-shell-classic .realtime-stream {
   height: 100%;
 }
 
+.realtime-stream-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+  background: #0b1624;
+  color: #dbe7f7;
+}
+
+.realtime-stream-placeholder.hidden {
+  display: none;
+}
+
 .realtime-shell-classic .realtime-telemetry-strip {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
 }
 
 .realtime-shell-classic .realtime-skeleton-frame {
@@ -1332,6 +1506,447 @@ dd {
 ul {
   margin-bottom: 0;
   padding-left: 20px;
+}
+
+/* Driver Safety v1 keeps the operator's evidence and decision on one screen. */
+.driver-safety-console {
+  display: grid;
+  gap: 16px;
+}
+
+.driver-safety-page {
+  width: min(1840px, calc(100% - 24px));
+}
+
+.driver-safety-header-v2,
+.driver-safety-commandbar {
+  margin-bottom: 0;
+}
+
+.driver-safety-header-v2 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.driver-safety-commandbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.driver-safety-operator {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.driver-safety-stage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(420px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.driver-safety-stage-panel,
+.driver-safety-observe-panel {
+  margin-bottom: 0;
+}
+
+.driver-safety-stage-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.driver-safety-stage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.driver-safety-live-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.driver-safety-video-frame-v2 {
+  align-items: center;
+  background: #071522;
+  border: 1px solid #22364a;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  min-height: 560px;
+  overflow: hidden;
+  position: relative;
+}
+
+.driver-safety-video-frame-v2 img {
+  display: block;
+  height: auto;
+  max-height: 820px;
+  max-width: 100%;
+  width: 100%;
+}
+
+.driver-safety-video-frame-v2 .muted {
+  color: #c5d2e0;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+.driver-safety-stage-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.driver-safety-stage-stat {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 14px;
+}
+
+.driver-safety-stage-stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.driver-safety-stage-stat strong {
+  display: block;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.driver-safety-observe-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.driver-safety-observe-card,
+.driver-safety-probability-card-v2,
+.driver-action-probability-card-v2 {
+  margin-bottom: 0;
+}
+
+.driver-safety-observe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.driver-safety-observe-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 14px;
+  min-width: 0;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.driver-safety-observe-item span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.driver-safety-observe-item strong {
+  display: block;
+  font-size: 18px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.driver-safety-observe-item.is-good {
+  border-color: #9fd5b2;
+  background: #effaf3;
+}
+
+.driver-safety-observe-item.is-warn {
+  border-color: #fedf89;
+  background: #fffaeb;
+}
+
+.driver-safety-observe-item.is-danger {
+  border-color: #fecdca;
+  background: #fff1f3;
+}
+
+.driver-safety-observe-item.is-neutral {
+  border-color: var(--line);
+  background: #fbfcfe;
+}
+
+.driver-safety-probability-card-v2 strong {
+  display: block;
+  font-size: 36px;
+  margin: 10px 0 12px;
+}
+
+.driver-safety-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+}
+
+.driver-safety-bottom-grid .panel {
+  margin-bottom: 0;
+}
+
+.driver-safety-runtime-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.driver-safety-runtime-list div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 12px 14px;
+}
+
+.driver-safety-runtime-list span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.driver-safety-runtime-list strong {
+  display: block;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.compact-artifact-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.driver-safety-header,
+.driver-safety-toolbar,
+.driver-safety-layout,
+.driver-safety-artifact-grid,
+.driver-safety-details > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.driver-safety-header h2 {
+  margin: 0;
+}
+
+.driver-safety-header p {
+  margin: 6px 0 0;
+}
+
+.driver-safety-toolbar {
+  min-height: 72px;
+}
+
+.driver-safety-toolbar strong {
+  margin-left: 8px;
+}
+
+.driver-safety-toolbar .badge {
+  margin-left: 8px;
+}
+
+.driver-safety-layout {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(330px, 0.7fr);
+}
+
+.driver-safety-camera-panel,
+.driver-safety-readout {
+  min-width: 0;
+}
+
+.driver-safety-readout {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.driver-safety-video-frame {
+  align-items: center;
+  background: #071522;
+  border: 1px solid #22364a;
+  display: flex;
+  justify-content: center;
+  min-height: 440px;
+  overflow: hidden;
+}
+
+.driver-safety-video-frame img {
+  display: block;
+  height: auto;
+  max-height: 620px;
+  max-width: 100%;
+  width: 100%;
+}
+
+.driver-safety-video-frame .muted {
+  color: #c5d2e0;
+  margin: 0;
+  text-align: center;
+}
+
+.driver-safety-model-note {
+  background: #f5f8fc;
+  border-left: 3px solid #2d6cdf;
+  color: #40536a;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 12px;
+  padding: 10px 12px;
+}
+
+.driver-safety-details {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.driver-safety-details > div {
+  border-top: 1px solid var(--line);
+  min-height: 48px;
+  padding: 10px 0;
+}
+
+.driver-safety-details > div:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.driver-safety-details dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.driver-safety-details dd {
+  font-weight: 700;
+  margin: 0;
+  text-align: right;
+}
+
+.driver-safety-probability-card strong {
+  display: block;
+  font-size: 34px;
+  margin: 8px 0 12px;
+}
+
+.driver-safety-meter {
+  background: #e8eef7;
+  height: 10px;
+  overflow: hidden;
+}
+
+.driver-safety-meter span {
+  background: #df4b3f;
+  display: block;
+  height: 100%;
+  transition: width 180ms linear;
+  width: 0;
+}
+
+.driver-action-probabilities {
+  display: grid;
+  gap: 8px;
+}
+
+.driver-action-probability-row {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(110px, 1fr) minmax(90px, 1fr) 48px;
+  min-height: 26px;
+}
+
+.driver-action-probability-row span {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.driver-action-probability-row strong {
+  font-size: 13px;
+  text-align: right;
+}
+
+.driver-action-probability-bar {
+  background: #e8eef7;
+  height: 8px;
+  overflow: hidden;
+}
+
+.driver-action-probability-bar i {
+  background: #2d6cdf;
+  display: block;
+  height: 100%;
+  transition: width 180ms linear;
+  width: 0;
+}
+
+.driver-safety-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.driver-safety-metrics .metric-card {
+  min-height: 92px;
+}
+
+.driver-safety-artifact-grid {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.driver-safety-artifact {
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+  min-height: 108px;
+  padding: 12px;
+}
+
+.driver-safety-artifact.is-ready {
+  border-color: #9fd8b1;
+}
+
+.driver-safety-artifact.is-missing {
+  border-color: #f4ad8a;
+}
+
+.driver-safety-artifact span {
+  color: #198747;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.driver-safety-artifact.is-missing span {
+  color: #c54225;
+}
+
+.driver-safety-artifact small {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {
@@ -1389,6 +2004,46 @@ ul {
   .realtime-status-stack,
   .realtime-diagnostics-list {
     grid-template-columns: 1fr;
+  }
+
+  .driver-safety-header,
+  .driver-safety-toolbar,
+  .driver-safety-layout,
+  .driver-safety-artifact-grid {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .driver-safety-header,
+  .driver-safety-toolbar {
+    flex-direction: column;
+  }
+
+  .driver-safety-header-v2,
+  .driver-safety-commandbar,
+  .driver-safety-stage-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .driver-safety-stage-grid,
+  .driver-safety-bottom-grid,
+  .driver-safety-stage-strip,
+  .driver-safety-observe-grid,
+  .driver-safety-runtime-list {
+    grid-template-columns: 1fr;
+  }
+
+  .compact-artifact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .driver-safety-video-frame-v2 {
+    min-height: 280px;
+  }
+
+  .driver-safety-video-frame {
+    min-height: 260px;
   }
 
   .quick-link-grid {

@@ -7,7 +7,12 @@ from .model_options import supported_behavior_backends, supported_phone_backends
 from .realtime_monitor import realtime_manager
 
 
-def register_socket_events(socketio):
+def register_socket_events(socketio, enable_legacy=False):
+    mmrt_model_lab_manager = None
+    if enable_legacy:
+        from .mmrt_model_lab import mmrt_model_lab_manager as legacy_manager
+
+        mmrt_model_lab_manager = legacy_manager
     @socketio.on("connect")
     def handle_connect():
         socketio.emit("server_status", {"status": "connected"}, to=request.sid)
@@ -33,9 +38,88 @@ def register_socket_events(socketio):
             return
         realtime_manager.push_audio_chunk(request.sid, samples, sample_rate)
 
+    @socketio.on("mmrt_lab_audio_chunk")
+    def handle_mmrt_lab_audio_chunk(payload=None):
+        if mmrt_model_lab_manager is None:
+            return
+        payload = payload or {}
+        samples = payload.get("samples")
+        sample_rate = payload.get("sample_rate")
+        if samples is None:
+            return
+        mmrt_model_lab_manager.push_audio_chunk(request.sid, samples, sample_rate)
+
     @socketio.on("disconnect")
     def handle_disconnect():
         realtime_manager.discard(request.sid)
+        if mmrt_model_lab_manager is not None:
+            mmrt_model_lab_manager.discard(request.sid)
+
+    @socketio.on("start_mmrt_lab_session")
+    def handle_start_mmrt_lab_session(payload=None):
+        if mmrt_model_lab_manager is None:
+            socketio.emit(
+                "mmrt_lab_error",
+                {"message": "Legacy research demos are disabled in this deployment."},
+                to=request.sid,
+            )
+            return
+        payload = payload or {}
+        user_id = session.get("user_id")
+        if not user_id:
+            socketio.emit(
+                "mmrt_lab_error",
+                {"message": "You need to log in before starting the model lab."},
+                to=request.sid,
+            )
+            return
+
+        behavior_backend = str(
+            payload.get("behavior_model_backend") or "mmrt_multimodal_full_v2_t4x2"
+        ).strip().lower()
+        if not behavior_backend.startswith("mmrt"):
+            socketio.emit(
+                "mmrt_lab_error",
+                {"message": "The model lab only runs the MMRT multimodal model."},
+                to=request.sid,
+            )
+            return
+
+        started, error = mmrt_model_lab_manager.start(
+            current_app._get_current_object(),
+            socketio,
+            request.sid,
+            {
+                "behavior_model_backend": behavior_backend,
+                "camera_index": payload.get("camera_index"),
+            },
+        )
+        if not started:
+            socketio.emit(
+                "mmrt_lab_error",
+                {"message": error or "Could not start the MMRT model lab."},
+                to=request.sid,
+            )
+            return
+        socketio.emit("mmrt_lab_status", {"status": "starting"}, to=request.sid)
+
+    @socketio.on("stop_mmrt_lab_session")
+    def handle_stop_mmrt_lab_session():
+        if mmrt_model_lab_manager is None:
+            socketio.emit(
+                "mmrt_lab_error",
+                {"message": "Legacy research demos are disabled in this deployment."},
+                to=request.sid,
+            )
+            return
+        if mmrt_model_lab_manager.stop(request.sid):
+            socketio.emit("mmrt_lab_status", {"status": "stopping"}, to=request.sid)
+        else:
+            socketio.emit(
+                "mmrt_lab_error",
+                {"message": "No active MMRT model lab session was found for this browser."},
+                to=request.sid,
+            )
 
     @socketio.on("start_realtime_session")
     def handle_start_realtime_session(payload=None):
@@ -44,7 +128,7 @@ def register_socket_events(socketio):
         if not user_id:
             socketio.emit(
                 "realtime_error",
-                {"message": "Bạn cần đăng nhập trước khi giám sát realtime."},
+                {"message": "You need to log in before starting realtime monitoring."},
                 to=request.sid,
             )
             return
@@ -53,7 +137,7 @@ def register_socket_events(socketio):
         if not driver_id:
             socketio.emit(
                 "realtime_error",
-                {"message": "Hãy chọn một tài xế đang hoạt động trước khi giám sát."},
+                {"message": "Select an active driver before starting realtime monitoring."},
                 to=request.sid,
             )
             return
@@ -70,15 +154,18 @@ def register_socket_events(socketio):
         if driver is None:
             socketio.emit(
                 "realtime_error",
-                {"message": "Tài xế đã chọn không còn khả dụng."},
+                {"message": "The selected driver is no longer available."},
                 to=request.sid,
             )
             return
 
-        behavior_backend = str(payload.get("behavior_model_backend") or "mmrt_multimodal_full_v2_t4x2").strip().lower()
-        phone_backend = str(payload.get("phone_detector_backend") or "disabled").strip().lower()
-        if behavior_backend.startswith("mmrt"):
-            phone_backend = "disabled"
+        behavior_backend = str(
+            payload.get("behavior_model_backend") or "driver_safety_v1"
+        ).strip().lower()
+        phone_backend = str(
+            payload.get("phone_detector_backend")
+            or "disabled"
+        ).strip().lower()
         language = str(payload.get("language") or session.get("language") or "en").strip().lower()
         if language not in {"en", "vi"}:
             language = "en"
@@ -86,15 +173,14 @@ def register_socket_events(socketio):
         if behavior_backend not in supported_behavior_backends():
             socketio.emit(
                 "realtime_error",
-                {"message": f"Backend mô hình hành vi không được hỗ trợ: {behavior_backend}."},
+                {"message": f"Unsupported behavior model backend: {behavior_backend}."},
                 to=request.sid,
             )
             return
-
-        if phone_backend not in supported_phone_backends(include_disabled=True):
+        if phone_backend not in supported_phone_backends():
             socketio.emit(
                 "realtime_error",
-                {"message": f"Backend phát hiện điện thoại không được hỗ trợ: {phone_backend}."},
+                {"message": f"Unsupported phone detector backend: {phone_backend}."},
                 to=request.sid,
             )
             return
@@ -114,7 +200,7 @@ def register_socket_events(socketio):
         if not started:
             socketio.emit(
                 "realtime_error",
-                {"message": error or "Không thể bắt đầu giám sát realtime."},
+                {"message": error or "Could not start realtime monitoring."},
                 to=request.sid,
             )
             return
@@ -128,6 +214,6 @@ def register_socket_events(socketio):
         else:
             socketio.emit(
                 "realtime_error",
-                {"message": "Không tìm thấy phiên realtime đang hoạt động cho trình duyệt này."},
+                {"message": "No active realtime session was found for this browser."},
                 to=request.sid,
             )

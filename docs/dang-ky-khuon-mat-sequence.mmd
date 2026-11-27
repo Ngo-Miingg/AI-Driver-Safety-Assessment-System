@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor User as Người dùng
+    participant FE as Giao diện
+    participant BE as Backend
+    participant DB as Cơ sở dữ liệu
+
+    User->>FE: 1. Chụp mẫu khuôn mặt theo tư thế
+    FE-->>User: Hiển thị ảnh mẫu đã chụp
+    User->>FE: 2. Bấm Đăng ký khuôn mặt
+    FE->>BE: Gửi mẫu khuôn mặt đăng ký
+    alt 2(a). Có mẫu khuôn mặt hợp lệ
+        BE->>DB: Lưu ảnh và embedding khuôn mặt
+        DB-->>BE: Xác nhận đã lưu
+        BE-->>FE: Trả kết quả đăng ký thành công
+        FE-->>User: Hiển thị thông báo thành công
+    else 2(b). Không có mẫu hợp lệ
+        BE-->>FE: Thông báo không có mẫu hợp lệ
+        FE-->>User: Hiển thị thông báo không lưu được
+    else 2(c). Dữ liệu đầu vào không hợp lệ
+        BE-->>FE: Thông báo dữ liệu đầu vào không hợp lệ
+        FE-->>User: Hiển thị thông báo lỗi đầu vào
+    end

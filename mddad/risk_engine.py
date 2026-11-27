@@ -7,12 +7,18 @@ EVENT_CATEGORY = {
     "normal_driving": "visibility",
     "phone_interaction": "phone_usage",
     "phone_calling": "phone_usage",
+    "phone_texting": "phone_usage",
     "phone_use": "phone_usage",
+    "operating_radio": "distraction",
+    "drinking_eating": "distraction",
+    "reaching_behind": "distraction",
+    "hair_and_makeup": "distraction",
     "in_vehicle_display_interaction": "distraction",
     "eating_distraction": "distraction",
     "drinking_distraction": "distraction",
     "visual_posture_distraction": "distraction",
     "eye_closure": "drowsiness",
+    "drowsiness": "drowsiness",
     "yawning": "drowsiness",
     "yawn": "drowsiness",
     "phone_usage": "phone_usage",
@@ -28,12 +34,18 @@ BASE_WEIGHTS = {
     "normal_driving": 0,
     "phone_interaction": 22,
     "phone_calling": 25,
+    "phone_texting": 25,
     "phone_use": 25,
+    "operating_radio": 14,
+    "drinking_eating": 16,
+    "reaching_behind": 18,
+    "hair_and_makeup": 14,
     "in_vehicle_display_interaction": 18,
     "eating_distraction": 14,
     "drinking_distraction": 12,
     "visual_posture_distraction": 16,
     "eye_closure": 18,
+    "drowsiness": 18,
     "yawning": 10,
     "yawn": 10,
     "phone_usage": 25,
@@ -137,7 +149,7 @@ def build_risk_logs(events, duration_seconds):
 
 
 def fatigue_trend(events, duration_seconds):
-    fatigue_events = [event for event in events if event.event_type in {"eye_closure", "yawn"}]
+    fatigue_events = [event for event in events if event.event_type in {"drowsiness", "eye_closure", "yawn"}]
     duration = float(duration_seconds or 0)
     if duration < 30 or not fatigue_events:
         return "insufficient_data"

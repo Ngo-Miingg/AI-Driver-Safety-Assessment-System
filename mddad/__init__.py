@@ -15,19 +15,20 @@ def create_app(config_object=None):
     )
     app.config.from_object(config_object or get_config())
 
+    from .time_utils import format_hanoi_time
+
+    app.jinja_env.filters["hanoi_time"] = format_hanoi_time
+
     from .logging_config import configure_logging
 
     configure_logging(app)
 
-    from .analysis_routes import register_analysis_routes
     from .auth import register_auth
     from .database import init_app as init_database
     from .dashboard_routes import register_dashboard_routes
     from .driver_routes import register_driver_routes
     from .history_routes import register_history_routes
     from .i18n import register_i18n
-    from .multimodal_test_routes import register_multimodal_test_routes
-    from .mmrt_v2_demo_routes import register_mmrt_v2_demo_routes
     from .routes import register_routes
     from .realtime_routes import register_realtime_routes
     from .sockets import register_socket_events
@@ -41,13 +42,21 @@ def create_app(config_object=None):
     register_dashboard_routes(app)
     register_driver_routes(app)
     register_upload_routes(app)
-    register_multimodal_test_routes(app)
-    register_mmrt_v2_demo_routes(app)
+    if app.config.get("ENABLE_LEGACY_RESEARCH_ROUTES", False):
+        from .analysis_routes import register_analysis_routes
+        from .multimodal_test_routes import register_multimodal_test_routes
+        from .mmrt_v2_demo_routes import register_mmrt_v2_demo_routes
+
+        register_analysis_routes(app)
+        register_multimodal_test_routes(app)
+        register_mmrt_v2_demo_routes(app)
     register_realtime_routes(app)
     register_history_routes(app)
-    register_analysis_routes(app)
     register_evaluation_routes(app)
     socketio.init_app(app, async_mode=app.config["SOCKETIO_ASYNC_MODE"])
-    register_socket_events(socketio)
+    register_socket_events(
+        socketio,
+        enable_legacy=app.config.get("ENABLE_LEGACY_RESEARCH_ROUTES", False),
+    )
 
     return app

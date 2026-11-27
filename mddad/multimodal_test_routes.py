@@ -10,7 +10,7 @@ from .auth import login_required
 from .i18n import translate, translate_value
 from .activity7_infer import Activity7Package
 from .mmrt_v2_infer import MMRTV2Package, clip_result_to_dict
-from .model_options import phone_detector_options
+from .model_options import behavior_model_options
 from .multimodal_analysis import _clip_windows
 from .video_processing import extract_video_metadata
 from .database import get_db
@@ -51,6 +51,7 @@ def _infer_model(package_path, video_path, clip_seconds, stride_seconds, frame_c
                         "sampled_frame_count": clip_dict["frame_count"],
                         "pose_frame_count": clip_dict["skeleton_frames_detected"],
                         "top3": clip_dict["probabilities"][:3],
+                        "probabilities": clip_dict["probabilities"],
                         "baseline_label": clip_dict["label"],
                         "baseline_confidence": clip_dict["confidence"],
                         "geom2_label": clip_dict["label"],
@@ -86,6 +87,7 @@ def _infer_model(package_path, video_path, clip_seconds, stride_seconds, frame_c
                     "sampled_frame_count": clip.sampled_frame_count,
                     "pose_frame_count": clip.pose_frame_count,
                     "top3": pred.probabilities[:3],
+                    "probabilities": pred.probabilities,
                     "baseline_label": pred.baseline_label,
                     "baseline_confidence": pred.baseline_confidence,
                     "geom2_label": pred.geom2_label,
@@ -102,9 +104,12 @@ def register_multimodal_test_routes(app):
     @app.route("/multimodal-test", methods=("GET", "POST"))
     @app.route("/model-test-simple", methods=("GET", "POST"))
     @app.route("/model-test-simple-cam", methods=("GET", "POST"))
+    @app.route("/mmrt-model-lab", methods=("GET", "POST"))
     @login_required
     def multimodal_test():
-        if request.path == "/model-test-simple-cam":
+        if request.path == "/mmrt-model-lab":
+            template_name = "mmrt_model_lab.html"
+        elif request.path == "/model-test-simple-cam":
             template_name = "model_test_simple_cam.html"
         elif request.path == "/model-test-simple":
             template_name = "model_test_simple.html"
@@ -112,7 +117,13 @@ def register_multimodal_test_routes(app):
             template_name = "multimodal_test.html"
         result = None
         uploaded_name = None
-        backend = app.config.get("MULTIMODAL_MODEL_BACKEND", "activity7_package")
+        options = behavior_model_options()
+        allowed_backends = {option["value"] for option in options}
+        default_backend = app.config.get("MULTIMODAL_MODEL_BACKEND", "mmrt_multimodal_full_v2_t4x2")
+        backend = request.form.get("behavior_model_backend") or request.args.get("behavior_model_backend") or default_backend
+        backend = str(backend).strip().lower()
+        if backend not in allowed_backends:
+            backend = default_backend if default_backend in allowed_backends else "mmrt_multimodal_full_v2_t4x2"
         if _is_mmrt_backend(backend):
             model_path = Path(app.config["MMRT_V2_MODEL_PATH"])
         else:
@@ -147,12 +158,20 @@ def register_multimodal_test_routes(app):
                     saved_path = test_dir / stored_name
                     uploaded_file.save(saved_path)
                     try:
+                        if _is_mmrt_backend(backend):
+                            clip_seconds = float(app.config.get("MMRT_V2_CLIP_SECONDS", 3.0))
+                            stride_seconds = float(app.config.get("MMRT_V2_STRIDE_SECONDS", 1.5))
+                            frame_count = int(app.config.get("MMRT_V2_FRAME_COUNT", 16))
+                        else:
+                            clip_seconds = float(app.config.get("MULTIMODAL_CLIP_SECONDS", 4.0))
+                            stride_seconds = float(app.config.get("MULTIMODAL_CLIP_STRIDE_SECONDS", 2.0))
+                            frame_count = int(app.config.get("MULTIMODAL_FRAME_COUNT", 16))
                         metadata, predictions, top_prediction = _infer_model(
                             model_path,
                             saved_path,
-                            float(app.config.get("MULTIMODAL_CLIP_SECONDS", 4.0)),
-                            float(app.config.get("MULTIMODAL_CLIP_STRIDE_SECONDS", 2.0)),
-                            int(app.config.get("MULTIMODAL_FRAME_COUNT", 16)),
+                            clip_seconds,
+                            stride_seconds,
+                            frame_count,
                             app.config.get("MMRT_V2_DEVICE", app.config.get("MULTIMODAL_DEVICE", "cpu")),
                             app.config.get("ACTIVITY7_DECISION_MODE", "final"),
                         )
@@ -194,8 +213,7 @@ def register_multimodal_test_routes(app):
             demo_model_name=app.config.get("MODEL_DEMO_NAME", ""),
             decision_mode=app.config.get("ACTIVITY7_DECISION_MODE", "final"),
             behavior_backend=backend,
+            behavior_model_options=options,
             current_language=g.get("language", "en"),
-            phone_detector_options=phone_detector_options(app, include_disabled=True),
-            selected_phone_backend=app.config.get("REALTIME_PHONE_DETECTOR_BACKEND", "disabled"),
             active_driver=active_driver,
         )

@@ -8,6 +8,7 @@ from .auth import login_required
 from .database import get_db
 from .evaluation import EVENT_TYPES
 from .i18n import translate
+from .repositories import create_audit_log, create_media_asset
 from .settings import get_analysis_settings
 from .video_processing import count_sampled_frames, extract_video_metadata
 
@@ -117,7 +118,7 @@ def register_upload_routes(app):
                     processed_frame_count,
                     average_processing_fps
                 )
-                VALUES (?, ?, 'uploaded_video', 'pending_analysis', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, 'uploaded_video', 'pending_analysis', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     g.user["id"],
@@ -134,15 +135,43 @@ def register_upload_routes(app):
                     sampled_count / metadata.duration_seconds if metadata.duration_seconds else None,
                 ),
             )
+            session_id = cursor.lastrowid
+            media_asset_id = create_media_asset(
+                user_id=g.user["id"],
+                driver_id=active_driver["id"],
+                session_id=session_id,
+                asset_type="uploaded_video",
+                storage_path=relative_path,
+                original_filename=original_filename,
+                mime_type=uploaded_file.mimetype,
+                file_size_bytes=file_size,
+                width=metadata.width,
+                height=metadata.height,
+                duration_seconds=metadata.duration_seconds,
+                metadata={
+                    "fps": metadata.fps,
+                    "frame_count": metadata.frame_count,
+                    "sampled_frame_count": sampled_count,
+                },
+            )
+            create_audit_log(
+                user_id=g.user["id"],
+                driver_id=active_driver["id"],
+                session_id=session_id,
+                action="video.uploaded",
+                entity_type="media_asset",
+                entity_id=media_asset_id,
+                metadata={"session_type": "uploaded_video"},
+            )
             get_db().commit()
             flash(
                 translate(
                     "flash.video_uploaded",
-                    "Video uploaded successfully. Metadata is ready, and the main workflow is multimodal video-audio-skeleton analysis from the session page.",
+                    "Video uploaded successfully and its metadata is ready. Product inference for uploaded video is not integrated yet.",
                 ),
                 "success",
             )
-            return redirect(url_for("session_detail", session_id=cursor.lastrowid))
+            return redirect(url_for("session_detail", session_id=session_id))
 
         return render_template("upload.html", active_driver=active_driver)
 
@@ -428,5 +457,5 @@ def register_upload_routes(app):
             ),
         )
         db.commit()
-        flash(translate("flash.video_metadata_extracted", "Video metadata extracted successfully. The multimodal analysis will use video, audio, and skeleton cues from this file."), "success")
+        flash(translate("flash.video_metadata_extracted", "Video metadata extracted successfully. Product inference for uploaded video is not integrated yet."), "success")
         return redirect(url_for("session_detail", session_id=session_id))

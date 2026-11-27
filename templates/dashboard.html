@@ -48,6 +48,29 @@
   </article>
 </section>
 
+<section class="panel dashboard-risk-panel">
+  <div class="section-header">
+    <h2>{{ _('dashboard.risk_chart', 'Risk trend') }}</h2>
+    <span class="badge badge-info">{{ _('dashboard.recent_sessions', 'Recent Sessions') }}</span>
+  </div>
+  {% if recent_sessions %}
+    <div class="dashboard-risk-chart" aria-label="{{ _('dashboard.risk_chart', 'Risk trend') }}">
+      {% for item in recent_sessions|reverse %}
+        {% set risk_value = item["final_risk_score"] if item["final_risk_score"] is not none else 0 %}
+        <div class="dashboard-risk-bar">
+          <div class="dashboard-risk-track">
+            <span style="height: {{ [risk_value, 100]|min }}%"></span>
+          </div>
+          <strong>{{ "%.0f"|format(risk_value) }}</strong>
+          <small>#{{ item["id"] }}</small>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">{{ _('dashboard.no_sessions', 'No sessions yet. Upload a video and run multimodal analysis to populate the dashboard.') }}</p>
+  {% endif %}
+</section>
+
 <section class="two-column">
   <article class="panel">
     <div class="section-header">
@@ -113,7 +136,7 @@
             <td>{{ "%.0f"|format(item["final_risk_score"]) if item["final_risk_score"] is not none else "--" }}</td>
             <td><span class="badge {{ 'badge-danger' if item['final_alert_level'] == 'Danger' else ('badge-warning' if item['final_alert_level'] in ['Warning', 'Caution'] else 'badge-success') }}">{{ tr(item["final_alert_level"], "--") }}</span></td>
             <td>{{ item["event_count"] or 0 }}</td>
-            <td>{{ item["started_at"] or item["created_at"] }}</td>
+            <td>{{ (item["started_at"] or item["created_at"])|hanoi_time }}</td>
           </tr>
           {% endfor %}
         </tbody>

@@ -28,7 +28,7 @@
           <h3><a href="{{ url_for('session_detail', session_id=report['session_id']) }}">{{ rt(report["title"]) if report["title"] else _('reports.session_report', 'Session Report') }}</a></h3>
           <p class="muted">
             {{ _('common.driver', 'Driver') }}: {{ report["driver_name"] }} · {{ _('common.session', 'Session') }} #{{ report["session_id"] }} ·
-            {{ tr(report["session_type"]) }} · {{ report["generated_at"] or report["created_at"] }}
+            {{ tr(report["session_type"]) }} · {{ (report["generated_at"] or report["created_at"])|hanoi_time }}
           </p>
           <p>{{ rt(report["summary"]) }}</p>
         </div>

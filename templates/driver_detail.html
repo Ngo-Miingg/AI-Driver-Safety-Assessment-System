@@ -29,6 +29,93 @@
     <span>{{ _('common.status', 'Status') }}</span>
     <strong>{{ tr(driver["status"]) }}</strong>
   </article>
+  <article class="metric-card">
+    <span>{{ _('drivers.face_identity', 'Face identity') }}</span>
+    <strong>{{ _('drivers.face_enrolled', 'Enrolled') if driver["face_enrolled_at"] else _('drivers.face_not_enrolled', 'Not enrolled') }}</strong>
+  </article>
+</section>
+
+<section class="panel verifier-panel {{ 'verifier-panel-ready' if verifier_status.ready else 'verifier-panel-warn' }}">
+  <div class="section-header">
+    <h2>{{ _('drivers.face_enrollment', 'Face Enrollment') }}</h2>
+    <span class="badge {{ 'badge-success' if verifier_status.ready else 'badge-warning' }}">
+      {{ _('drivers.verifier_ready', 'Verifier ready') if verifier_status.ready else _('drivers.verifier_unavailable', 'Verifier unavailable') }}
+    </span>
+  </div>
+  <div class="verifier-state-box">
+    <strong>
+      {% if verifier_status.ready %}
+        {{ _('drivers.verifier_state_ready', 'Verifier ready for biometric enrollment') }}
+      {% else %}
+        {{ _('drivers.verifier_state_unavailable', 'Verifier not ready') }}
+      {% endif %}
+    </strong>
+    <p class="muted">
+      {% if verifier_status.ready %}
+        {{ _('drivers.verifier_state_ready_detail', 'You can enroll multiple camera samples and the system will store a stable embedding centroid for realtime verification.') }}
+      {% else %}
+        {{ _('drivers.verifier_state_unavailable_detail', 'The face verification model or runtime is missing. Enrollment remains disabled until the required artifact is available.') }}
+      {% endif %}
+    </p>
+  </div>
+  <p class="muted">
+    {{ _('drivers.face_enrollment_help', 'Enroll 3-8 clear face samples from the same driver. The system extracts one embedding per valid face and stores the averaged identity embedding for realtime verification.') }}
+  </p>
+  <p class="muted">
+    {{ _('drivers.face_enrollment_quality_hint', 'Use frontal and slightly varied angles under normal cabin lighting. Avoid masks, blur, strong backlight, or multiple faces in one image.') }}
+  </p>
+  {% if verifier_status.error %}
+    <p class="flash error">{{ verifier_status.error }}</p>
+  {% endif %}
+  <dl class="detail-list">
+    <div>
+      <dt>{{ _('drivers.face_status', 'Enrollment status') }}</dt>
+      <dd>{{ driver["face_enrolled_at"] or _('drivers.face_not_enrolled', 'Not enrolled') }}</dd>
+    </div>
+    <div>
+      <dt>{{ _('drivers.face_threshold', 'Matching threshold') }}</dt>
+      <dd>{{ "%.2f"|format(verifier_status.threshold) }}</dd>
+    </div>
+  </dl>
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('enroll_driver_face', driver_id=driver['id']) }}" class="form-stack">
+    <div class="face-enrollment-camera" data-camera-label="{{ _('drivers.face_camera_ready', 'Camera ready for guided enrollment') }}">
+      <div class="face-enrollment-video-wrap">
+        <video id="face-enrollment-video" playsinline muted></video>
+        <canvas id="face-enrollment-canvas" class="hidden"></canvas>
+        <div id="face-enrollment-placeholder" class="face-enrollment-placeholder">
+          {{ _('drivers.face_camera_placeholder', 'Use camera enrollment to collect several face angles automatically.') }}
+        </div>
+      </div>
+      <div class="face-enrollment-controls">
+        <div>
+          <strong id="face-enrollment-step">{{ _('drivers.face_camera_idle', 'Camera enrollment is idle') }}</strong>
+          <p class="muted" id="face-enrollment-count">{{ _('drivers.face_camera_count', 'Captured samples') }}: 0</p>
+        </div>
+        <div class="button-row">
+          <button class="button secondary" type="button" id="face-camera-start">{{ _('drivers.face_camera_start', 'Open camera') }}</button>
+          <button class="button primary" type="button" id="face-camera-capture" disabled>{{ _('drivers.face_camera_capture', 'Capture guided samples') }}</button>
+          <button class="button secondary" type="button" id="face-camera-stop" disabled>{{ _('drivers.face_camera_stop', 'Stop camera') }}</button>
+        </div>
+      </div>
+      <div id="face-enrollment-thumbs" class="face-enrollment-thumbs" aria-label="{{ _('drivers.face_camera_samples', 'Captured face samples') }}"></div>
+    </div>
+    <input type="hidden" name="face_samples_json" id="face-samples-json">
+    <label>
+      {{ _('drivers.face_images', 'Enrollment images') }}
+      <input type="file" name="face_images" accept="image/png,image/jpeg,image/webp" multiple>
+    </label>
+    <p class="muted">{{ _('drivers.face_upload_fallback', 'File upload is a fallback. For stronger identity verification, use camera enrollment first.') }}</p>
+    <div class="button-row">
+      <button class="button primary" type="submit" {% if not verifier_status.ready %}disabled{% endif %}>
+        {{ _('drivers.enroll_face', 'Enroll face') }}
+      </button>
+    </div>
+  </form>
+  {% if driver["face_enrolled_at"] %}
+    <form method="post" action="{{ url_for('delete_driver_face_enrollment', driver_id=driver['id']) }}" class="button-row">
+      <button class="button secondary" type="submit">{{ _('drivers.delete_face_enrollment', 'Remove face enrollment') }}</button>
+    </form>
+  {% endif %}
 </section>
 
 <section class="panel">
@@ -36,11 +123,11 @@
   <dl class="detail-list">
     <div>
       <dt>{{ _('common.created', 'Created') }}</dt>
-      <dd>{{ driver["created_at"] }}</dd>
+      <dd>{{ driver["created_at"]|hanoi_time }}</dd>
     </div>
     <div>
       <dt>{{ _('common.updated', 'Updated') }}</dt>
-      <dd>{{ driver["updated_at"] or _('common.not_updated', 'Not updated yet') }}</dd>
+      <dd>{{ driver["updated_at"]|hanoi_time or _('common.not_updated', 'Not updated yet') }}</dd>
     </div>
     <div>
       <dt>{{ _('common.notes', 'Notes') }}</dt>
@@ -48,4 +135,8 @@
     </div>
   </dl>
 </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/face_enrollment.js') }}?v=20260803-guided-face"></script>
 {% endblock %}

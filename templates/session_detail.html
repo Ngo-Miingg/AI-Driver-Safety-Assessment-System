@@ -13,9 +13,13 @@
   </div>
   <div class="button-row">
     {% if session["session_type"] == "uploaded_video" %}
-      <form method="post" action="{{ url_for('run_multimodal_analysis', session_id=session['id']) }}">
-        <button type="submit" class="button primary">{{ _('session.run_multimodal', 'Run Multimodal Analysis') }}</button>
-      </form>
+      {% if config.ENABLE_LEGACY_RESEARCH_ROUTES %}
+        <form method="post" action="{{ url_for('run_multimodal_analysis', session_id=session['id']) }}">
+          <button type="submit" class="button primary">{{ _('session.run_multimodal', 'Run legacy research analysis') }}</button>
+        </form>
+      {% elif session['session_type'] == 'uploaded_video' and session['status'] == 'pending_analysis' %}
+        <span class="badge badge-neutral">{{ _('session.upload_analysis_pending', 'Product video inference is not integrated yet') }}</span>
+      {% endif %}
     {% endif %}
     <a class="button secondary" href="{{ url_for('history') }}">{{ _('nav.history', 'History') }}</a>
   </div>
@@ -79,9 +83,9 @@
       <div><dt>{{ _('common.driver', 'Driver') }}</dt><dd>{{ session["driver_name"] }}</dd></div>
       <div><dt>{{ _('session.session_type', 'Session type') }}</dt><dd>{{ tr(session["session_type"]) }}</dd></div>
       <div><dt>{{ _('session.analysis_mode', 'Analysis mode') }}</dt><dd>{{ tr(session["analysis_mode"], _('common.not_selected', 'Not selected')) }}</dd></div>
-      <div><dt>{{ _('common.created', 'Created') }}</dt><dd>{{ session["created_at"] }}</dd></div>
-      <div><dt>{{ _('common.started', 'Started') }}</dt><dd>{{ session["started_at"] or _('common.not_started', 'Not started') }}</dd></div>
-      <div><dt>{{ _('common.finished', 'Finished') }}</dt><dd>{{ session["ended_at"] or _('common.not_finished', 'Not finished') }}</dd></div>
+      <div><dt>{{ _('common.created', 'Created') }}</dt><dd>{{ session["created_at"]|hanoi_time }}</dd></div>
+      <div><dt>{{ _('common.started', 'Started') }}</dt><dd>{{ session["started_at"]|hanoi_time or _('common.not_started', 'Not started') }}</dd></div>
+      <div><dt>{{ _('common.finished', 'Finished') }}</dt><dd>{{ session["ended_at"]|hanoi_time or _('common.not_finished', 'Not finished') }}</dd></div>
       <div>
         <dt>{{ _('common.duration', 'Duration') }}</dt>
         {% set duration = session["video_duration_seconds"] if session["video_duration_seconds"] is not none else session["duration_seconds"] %}
@@ -269,7 +273,7 @@
     <div class="report-header">
       <div>
         <h3>{{ rt(report["title"]) }}</h3>
-        <p class="muted">{{ _('session.generated', 'Generated') }} {{ report["generated_at"] or _('session.recently', 'recently') }}. {{ _('common.status', 'Status') }}: {{ tr(report["status"]) }}.</p>
+        <p class="muted">{{ _('session.generated', 'Generated') }} {{ report["generated_at"]|hanoi_time or _('session.recently', 'recently') }}. {{ _('common.status', 'Status') }}: {{ tr(report["status"]) }}.</p>
       </div>
       <a class="button secondary" href="{{ url_for('reports') }}">{{ _('session.report_page', 'Reports Page') }}</a>
     </div>

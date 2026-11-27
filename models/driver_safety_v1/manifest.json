@@ -1,0 +1,63 @@
+{
+  "pipeline": "driver_safety_v1",
+  "version": 2,
+  "provenance": {
+    "report": "Nhom01_BaoCaoDATN.pdf, sections 4.4.1-4.4.3",
+    "training_repository": "https://github.com/cUddddD/Drowsiness_Detection",
+    "verified_source_commit": "767c4eb"
+  },
+  "feature_contract": {
+    "extractor": "source_exact_mediapipe_face_feature_extractor",
+    "sequence_length": 15,
+    "training_window_step_frames": 2,
+    "nominal_camera_fps": 30,
+    "nominal_window_seconds": 0.5,
+    "feature_count": 6,
+    "feature_order": [
+      "left_ear",
+      "right_ear",
+      "mar",
+      "pitch_degrees",
+      "yaw_degrees",
+      "roll_degrees"
+    ]
+  },
+  "decision_contract": {
+    "model_positive_threshold": 0.5,
+    "application_alert_threshold": 0.7,
+    "application_confirmation_seconds": 3.0
+  },
+  "reported_validation": {
+    "true_negative": 40518,
+    "false_positive": 1998,
+    "false_negative": 2044,
+    "true_positive": 53118,
+    "roc_auc": 0.9938,
+    "caution": "Random overlapping-window validation; not a subject-disjoint production claim."
+  },
+  "identity_contract": {
+    "input_shape": [112, 112, 3],
+    "embedding_dimensions": 128,
+    "distance": "euclidean",
+    "reported_threshold": 0.94,
+    "runtime_status": "requires_enrollment_and_verified_runtime"
+  },
+  "artifacts": {
+    "face_detection.pt": {
+      "sha256": "f4619b3c2dd00a3c631197f77bb2c5aa2dd12e91856754ec1f03cc6ffb4da16d",
+      "runtime_role": "face_detector"
+    },
+    "face_verification.h5": {
+      "sha256": "10f882a01c55d71d36ea2f8f25975413a3efe0869befd6ddeb61c0f60f9887a0",
+      "runtime_role": "identity_artifact_requires_enrollment"
+    },
+    "best_model.h5": {
+      "sha256": "60a55d559f61f73b53ee08e54435ada32c779615c29c48a61c2b40837d5f536b",
+      "runtime_role": "temporal_drowsiness_classifier"
+    },
+    "scaler.joblib": {
+      "sha256": "dbc2065fd8a893019c8b870c9f2c72c6f21a7aede74122a82b3b2034b159bbb4",
+      "runtime_role": "training_standard_scaler"
+    }
+  }
+}
